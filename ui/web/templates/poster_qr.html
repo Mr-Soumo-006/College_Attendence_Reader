@@ -1,0 +1,265 @@
+{% extends 'base.html' %}
+
+{% block title %}Print Campus QR Poster — Smart Campus{% endblock %}
+
+{% block extra_css %}
+<style>
+  .poster-container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 2rem 1rem;
+  }
+
+  .controls-card {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 16px;
+    padding: 1.25rem 2rem;
+    margin-bottom: 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    animation: fadeInDown 0.5s ease;
+  }
+
+  .controls-title {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.9);
+  }
+
+  .btn-print {
+    background: linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%);
+    color: white;
+    padding: 0.75rem 1.5rem;
+    border-radius: 10px;
+    border: none;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 0.88rem;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 4px 15px rgba(124, 58, 237, 0.3);
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .btn-print:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(124, 58, 237, 0.45);
+  }
+
+  /* ===== Printable Poster Sheet ===== */
+  .poster-sheet {
+    background: #ffffff;
+    color: #0f0e17;
+    border-radius: 20px;
+    padding: 4rem 3rem;
+    text-align: center;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+    position: relative;
+    border: 12px double #e2e8f0;
+    margin-bottom: 3rem;
+    animation: fadeInUp 0.6s ease 0.1s both;
+  }
+
+  .poster-header {
+    border-bottom: 3px solid #7c3aed;
+    padding-bottom: 1.5rem;
+    margin-bottom: 3rem;
+  }
+
+  .poster-brand {
+    font-family: 'Outfit', sans-serif;
+    font-size: 2.5rem;
+    font-weight: 800;
+    color: #0f0e17;
+    margin: 0;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .poster-sub {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #7c3aed;
+    text-transform: uppercase;
+    letter-spacing: 0.25em;
+    margin: 0.5rem 0 0 0;
+  }
+
+  .poster-qr-frame {
+    display: inline-block;
+    padding: 2.5rem;
+    border: 4px solid #0f0e17;
+    border-radius: 28px;
+    background: #ffffff;
+    margin-bottom: 3rem;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+  }
+
+  .poster-qr-image {
+    display: block;
+    max-width: 320px;
+    height: auto;
+  }
+
+  .instructions-box {
+    max-width: 580px;
+    margin: 0 auto 3rem;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 16px;
+    padding: 2rem;
+    text-align: left;
+  }
+
+  .instructions-title {
+    font-family: 'Outfit', sans-serif;
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #0f0e17;
+    margin: 0 0 1rem 0;
+    text-align: center;
+    border-bottom: 1px solid #e2e8f0;
+    padding-bottom: 0.5rem;
+  }
+
+  .steps-list {
+    margin: 0;
+    padding-left: 1.5rem;
+  }
+
+  .steps-list li {
+    font-size: 1.05rem;
+    line-height: 1.6;
+    color: #334155;
+    margin-bottom: 0.75rem;
+    font-weight: 500;
+  }
+
+  .steps-list li strong {
+    color: #0f0e17;
+  }
+
+  .poster-footer {
+    border-top: 1px solid #e2e8f0;
+    padding-top: 1.5rem;
+    font-size: 0.9rem;
+    color: #64748b;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+  }
+
+  .url-text {
+    font-family: monospace;
+    font-size: 0.95rem;
+    background: #f1f5f9;
+    padding: 0.35rem 0.75rem;
+    border-radius: 6px;
+    color: #475569;
+    display: inline-block;
+    margin-top: 0.75rem;
+    border: 1px dashed #cbd5e1;
+  }
+
+  /* ===== Print Mode Specific Styles ===== */
+  @media print {
+    /* Hide layout surrounding elements */
+    header, footer, nav, .navbar, .controls-card, .btn-refresh, .theme-toggle {
+      display: none !important;
+    }
+    
+    body {
+      background: #ffffff !important;
+      color: #000000 !important;
+      padding: 0 !important;
+      margin: 0 !important;
+    }
+
+    .poster-container {
+      max-width: 100% !important;
+      padding: 0 !important;
+      margin: 0 !important;
+    }
+
+    .poster-sheet {
+      border: none !important;
+      box-shadow: none !important;
+      padding: 2rem 0 !important;
+      margin: 0 !important;
+    }
+  }
+
+  @keyframes fadeInDown {
+    from { opacity: 0; transform: translateY(-15px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="poster-container">
+  
+  <!-- Controller card for teachers -->
+  <div class="controls-card">
+    <h2 class="controls-title">🏫 Attendance Poster Generator</h2>
+    <div style="display: flex; gap: 0.75rem;">
+      <a href="{{ url_for('teacher_dashboard') }}" class="btn-back" style="text-decoration: none; padding: 0.7rem 1.25rem;">Back to Dashboard</a>
+      <button class="btn-print" onclick="window.print()">
+        <span>🖨️</span> Print Poster
+      </button>
+    </div>
+  </div>
+
+  <!-- Physical Poster Sheet -->
+  <div class="poster-sheet">
+    <div class="poster-header">
+      <h1 class="poster-brand">Smart Campus</h1>
+      <p class="poster-sub">Digital Check-In Station</p>
+    </div>
+
+    <!-- QR Code Section -->
+    <div class="poster-qr-frame">
+      {% if qr_img_src %}
+        <img src="{{ qr_img_src }}" class="poster-qr-image" alt="Campus Static QR Code" width="300" height="300">
+      {% else %}
+        <div style="width: 300px; height: 300px; background: #f1f5f9; display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 12px; border: 3px dashed #cbd5e1;">
+          <span style="font-size: 3rem;">🔲</span>
+          <span style="font-weight: bold; margin-top: 10px; color: #475569;">QR Poster URL</span>
+          <span style="font-size: 0.8rem; margin-top: 4px; color: #64748b;">{{ poster_url }}</span>
+        </div>
+      {% endif %}
+    </div>
+
+    <!-- Scanning Instructions -->
+    <div class="instructions-box">
+      <h3 class="instructions-title">📲 How to Mark Your Attendance</h3>
+      <ol class="steps-list">
+        <li>📱 Scan the **QR Code** above with your smartphone's camera.</li>
+        <li>🔑 **Log In** with your unique Student ID (if not already logged in).</li>
+        <li>📍 Allow **GPS Location Access** in your web browser.</li>
+        <li>✅ Tap **"Mark Attendance"** to successfully register for today!</li>
+      </ol>
+      <div style="text-align: center;">
+        <span class="url-text">Poster URL: {{ poster_url }}</span>
+      </div>
+    </div>
+
+    <!-- Footer of the poster -->
+    <div class="poster-footer">
+      🔒 SECURE GPS-VERIFIED CHECK-IN • NO PROXIES ALLOWED • ONE SCAN PER DAY
+    </div>
+  </div>
+
+</div>
+{% endblock %}

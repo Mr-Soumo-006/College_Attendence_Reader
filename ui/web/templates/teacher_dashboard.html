@@ -1,0 +1,1184 @@
+{% extends 'base.html' %}
+
+{% block extra_css %}
+<style>
+  /* ═══════════════════════════════════════════
+     TEACHER DASHBOARD — GLASSMORPHIC DARK THEME
+     ═══════════════════════════════════════════ */
+
+  /* ── Tab Navigation ── */
+  .tab-bar {
+    display: flex;
+    gap: 4px;
+    background: rgba(255,255,255,0.03);
+    border-radius: 14px;
+    padding: 5px;
+    margin-bottom: 28px;
+    border: 1px solid rgba(255,255,255,0.06);
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .tab-bar::-webkit-scrollbar { display: none; }
+
+  .tab-btn {
+    flex: 1;
+    min-width: 140px;
+    padding: 13px 22px;
+    background: transparent;
+    border: none;
+    color: rgba(255,255,255,0.45);
+    font-family: 'Outfit', sans-serif;
+    font-size: 0.92rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    cursor: pointer;
+    border-radius: 10px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    white-space: nowrap;
+    text-align: center;
+  }
+  .tab-btn:hover {
+    color: rgba(255,255,255,0.7);
+    background: rgba(255,255,255,0.04);
+  }
+  .tab-btn.active {
+    color: #e0d4fc;
+    background: rgba(124, 58, 237, 0.15);
+    box-shadow: 0 0 20px rgba(124, 58, 237, 0.12);
+  }
+  .tab-btn.active::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 20%;
+    right: 20%;
+    height: 3px;
+    background: linear-gradient(90deg, #7c3aed, #a855f7);
+    border-radius: 3px 3px 0 0;
+    box-shadow: 0 0 12px rgba(168, 85, 247, 0.5);
+  }
+  .tab-btn .tab-icon {
+    margin-right: 8px;
+    font-size: 1.05rem;
+  }
+
+  .tab-panel {
+    display: none;
+    animation: tabFadeIn 0.45s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .tab-panel.active { display: block; }
+
+  @keyframes tabFadeIn {
+    from { opacity: 0; transform: translateY(12px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ── Header ── */
+  .dash-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 18px;
+    margin-bottom: 32px;
+  }
+  .dash-header .greeting {
+    font-family: 'Outfit', sans-serif;
+    font-size: 1.75rem;
+    font-weight: 700;
+    background: linear-gradient(135deg, #e0d4fc 0%, #a78bfa 50%, #7c3aed 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    line-height: 1.3;
+  }
+  .dash-header .date-line {
+    color: rgba(255,255,255,0.45);
+    font-size: 0.88rem;
+    margin-top: 4px;
+  }
+  .btn-refresh {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 11px 24px;
+    background: linear-gradient(135deg, #7c3aed, #6d28d9);
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 0.88rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 18px rgba(124, 58, 237, 0.3);
+  }
+  .btn-refresh:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 24px rgba(124, 58, 237, 0.45);
+  }
+  .btn-refresh:active { transform: translateY(0); }
+
+  /* ── KPI Cards ── */
+  .kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 18px;
+    margin-bottom: 28px;
+  }
+  .kpi-card {
+    background: rgba(255,255,255,0.04);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 16px;
+    padding: 22px 20px;
+    position: relative;
+    overflow: hidden;
+    transition: all 0.3s ease;
+  }
+  .kpi-card:hover {
+    transform: translateY(-4px);
+    border-color: rgba(255,255,255,0.14);
+    box-shadow: 0 12px 40px rgba(0,0,0,0.3);
+  }
+  .kpi-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    border-radius: 16px 16px 0 0;
+  }
+  .kpi-card.kpi-purple::before  { background: linear-gradient(90deg, #7c3aed, #a855f7); }
+  .kpi-card.kpi-emerald::before { background: linear-gradient(90deg, #059669, #10b981); }
+  .kpi-card.kpi-amber::before   { background: linear-gradient(90deg, #d97706, #f59e0b); }
+  .kpi-card.kpi-rose::before    { background: linear-gradient(90deg, #e11d48, #f43f5e); }
+  .kpi-card.kpi-cyan::before    { background: linear-gradient(90deg, #0891b2, #06b6d4); }
+
+  .kpi-card .kpi-icon {
+    font-size: 1.5rem;
+    margin-bottom: 10px;
+    display: block;
+  }
+  .kpi-card.kpi-purple .kpi-icon  { color: #a855f7; }
+  .kpi-card.kpi-emerald .kpi-icon { color: #10b981; }
+  .kpi-card.kpi-amber .kpi-icon   { color: #f59e0b; }
+  .kpi-card.kpi-rose .kpi-icon    { color: #f43f5e; }
+  .kpi-card.kpi-cyan .kpi-icon    { color: #06b6d4; }
+
+  .kpi-value {
+    font-family: 'Outfit', sans-serif;
+    font-size: 2rem;
+    font-weight: 700;
+    color: #f0ecfc;
+    line-height: 1;
+    margin-bottom: 6px;
+  }
+  .kpi-label {
+    font-size: 0.82rem;
+    color: rgba(255,255,255,0.45);
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  /* KPI shimmer accent */
+  .kpi-card::after {
+    content: '';
+    position: absolute;
+    top: -50%;
+    right: -50%;
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    opacity: 0.06;
+    transition: opacity 0.3s ease;
+  }
+  .kpi-card.kpi-purple::after  { background: #a855f7; }
+  .kpi-card.kpi-emerald::after { background: #10b981; }
+  .kpi-card.kpi-amber::after   { background: #f59e0b; }
+  .kpi-card.kpi-rose::after    { background: #f43f5e; }
+  .kpi-card.kpi-cyan::after    { background: #06b6d4; }
+  .kpi-card:hover::after { opacity: 0.12; }
+
+  /* ── High Risk Banner ── */
+  .high-risk-banner {
+    background: rgba(244, 63, 94, 0.08);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(244, 63, 94, 0.2);
+    border-radius: 14px;
+    padding: 18px 24px;
+    margin-bottom: 28px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    animation: pulseGlow 3s ease-in-out infinite;
+  }
+  @keyframes pulseGlow {
+    0%, 100% { box-shadow: 0 0 15px rgba(244, 63, 94, 0.08); }
+    50%      { box-shadow: 0 0 30px rgba(244, 63, 94, 0.18); }
+  }
+  .high-risk-banner .banner-icon {
+    font-size: 1.6rem;
+    color: #f43f5e;
+    animation: shake 4s ease-in-out infinite;
+  }
+  @keyframes shake {
+    0%, 88%, 100% { transform: rotate(0); }
+    90% { transform: rotate(-8deg); }
+    92% { transform: rotate(8deg); }
+    94% { transform: rotate(-5deg); }
+    96% { transform: rotate(5deg); }
+  }
+  .high-risk-banner .banner-text {
+    color: #fca5a5;
+    font-weight: 600;
+    font-size: 0.95rem;
+  }
+  .high-risk-banner .banner-count {
+    color: #f43f5e;
+    font-family: 'Outfit', sans-serif;
+    font-weight: 700;
+    font-size: 1.1rem;
+  }
+
+  /* ── Glass Tables ── */
+  .table-wrap {
+    background: rgba(255,255,255,0.03);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 16px;
+    overflow: hidden;
+  }
+  .table-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 18px 22px;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .table-toolbar .toolbar-title {
+    font-family: 'Outfit', sans-serif;
+    font-size: 1.05rem;
+    font-weight: 600;
+    color: rgba(255,255,255,0.85);
+  }
+  .search-box {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 10px;
+    padding: 8px 14px;
+    transition: all 0.3s ease;
+  }
+  .search-box:focus-within {
+    border-color: rgba(124, 58, 237, 0.4);
+    box-shadow: 0 0 16px rgba(124, 58, 237, 0.1);
+  }
+  .search-box .search-icon { color: rgba(255,255,255,0.35); font-size: 0.9rem; }
+  .search-box input {
+    background: none;
+    border: none;
+    outline: none;
+    color: #e0e0e0;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 0.85rem;
+    width: 180px;
+  }
+  .search-box input::placeholder { color: rgba(255,255,255,0.3); }
+
+  .table-responsive { overflow-x: auto; }
+
+  .glass-table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 600px;
+  }
+  .glass-table thead th {
+    padding: 14px 18px;
+    text-align: left;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: rgba(255,255,255,0.45);
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    border-bottom: 1px solid rgba(255,255,255,0.07);
+    white-space: nowrap;
+    user-select: none;
+    position: relative;
+  }
+  .glass-table thead th.sortable {
+    cursor: pointer;
+    transition: color 0.2s ease;
+  }
+  .glass-table thead th.sortable:hover {
+    color: rgba(255,255,255,0.7);
+  }
+  .glass-table thead th .sort-arrow {
+    margin-left: 5px;
+    font-size: 0.7rem;
+    opacity: 0.4;
+    transition: opacity 0.2s ease;
+  }
+  .glass-table thead th.sort-active .sort-arrow { opacity: 1; color: #a855f7; }
+
+  .glass-table tbody tr {
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+    transition: background 0.25s ease;
+  }
+  .glass-table tbody tr:hover {
+    background: rgba(255,255,255,0.04);
+  }
+  .glass-table tbody tr:last-child { border-bottom: none; }
+  .glass-table tbody td {
+    padding: 13px 18px;
+    font-size: 0.88rem;
+    color: rgba(255,255,255,0.78);
+    white-space: nowrap;
+  }
+
+  .row-high-risk {
+    border-left: 3px solid rgba(244, 63, 94, 0.5) !important;
+  }
+
+  /* ── Badges ── */
+  .badge {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  .badge-green {
+    background: rgba(16, 185, 129, 0.12);
+    color: #34d399;
+    border: 1px solid rgba(16, 185, 129, 0.2);
+  }
+  .badge-amber {
+    background: rgba(245, 158, 11, 0.12);
+    color: #fbbf24;
+    border: 1px solid rgba(245, 158, 11, 0.2);
+  }
+  .badge-red {
+    background: rgba(244, 63, 94, 0.12);
+    color: #fb7185;
+    border: 1px solid rgba(244, 63, 94, 0.2);
+  }
+  .badge-cyan {
+    background: rgba(6, 182, 212, 0.12);
+    color: #22d3ee;
+    border: 1px solid rgba(6, 182, 212, 0.2);
+  }
+  .badge-purple {
+    background: rgba(124, 58, 237, 0.12);
+    color: #c4b5fd;
+    border: 1px solid rgba(124, 58, 237, 0.2);
+  }
+  .badge-glow-red {
+    box-shadow: 0 0 14px rgba(244, 63, 94, 0.25);
+  }
+  .badge-glow-green {
+    box-shadow: 0 0 14px rgba(16, 185, 129, 0.25);
+  }
+  .badge-glow-amber {
+    box-shadow: 0 0 14px rgba(245, 158, 11, 0.2);
+  }
+
+  /* ── Prediction Cards ── */
+  .pred-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+  }
+  .pred-card {
+    background: rgba(255,255,255,0.04);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 16px;
+    padding: 22px;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+  }
+  .pred-card:hover {
+    transform: translateY(-4px);
+    border-color: rgba(255,255,255,0.14);
+    box-shadow: 0 12px 40px rgba(0,0,0,0.25);
+  }
+  .pred-card.pred-high {
+    border-color: rgba(244, 63, 94, 0.2);
+  }
+  .pred-card.pred-high:hover {
+    box-shadow: 0 12px 40px rgba(244, 63, 94, 0.12);
+  }
+  .pred-card .pred-name {
+    font-family: 'Outfit', sans-serif;
+    font-size: 1.05rem;
+    font-weight: 600;
+    color: #f0ecfc;
+    margin-bottom: 3px;
+  }
+  .pred-card .pred-meta {
+    font-size: 0.8rem;
+    color: rgba(255,255,255,0.4);
+    margin-bottom: 14px;
+  }
+  .pred-card .pred-badge-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 14px;
+  }
+  .prob-bar-wrap {
+    width: 100%;
+    height: 8px;
+    background: rgba(255,255,255,0.06);
+    border-radius: 8px;
+    overflow: hidden;
+    margin-bottom: 8px;
+  }
+  .prob-bar {
+    height: 100%;
+    border-radius: 8px;
+    transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .prob-bar.bar-red {
+    background: linear-gradient(90deg, #e11d48, #f43f5e);
+    box-shadow: 0 0 12px rgba(244, 63, 94, 0.35);
+  }
+  .prob-bar.bar-green {
+    background: linear-gradient(90deg, #059669, #10b981);
+    box-shadow: 0 0 12px rgba(16, 185, 129, 0.35);
+  }
+  .prob-bar.bar-amber {
+    background: linear-gradient(90deg, #d97706, #f59e0b);
+    box-shadow: 0 0 12px rgba(245, 158, 11, 0.3);
+  }
+  .prob-pct {
+    font-size: 0.82rem;
+    font-weight: 600;
+    text-align: right;
+  }
+  .prob-pct.pct-red  { color: #fb7185; }
+  .prob-pct.pct-green { color: #34d399; }
+  .prob-pct.pct-amber { color: #fbbf24; }
+
+  /* ── Alerts & Actions Split ── */
+  .split-layout {
+    display: grid;
+    grid-template-columns: 1.5fr 1fr;
+    gap: 24px;
+  }
+  .alerts-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .alert-card {
+    background: rgba(255,255,255,0.04);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 14px;
+    padding: 18px 20px;
+    transition: all 0.3s ease;
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+  }
+  .alert-card:hover {
+    transform: translateY(-2px);
+    border-color: rgba(255,255,255,0.12);
+  }
+  .alert-card .alert-icon {
+    font-size: 1.4rem;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+  .alert-card .alert-body { flex: 1; }
+  .alert-card .alert-top {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 6px;
+    flex-wrap: wrap;
+  }
+  .alert-card .alert-student {
+    font-weight: 600;
+    color: rgba(255,255,255,0.85);
+    font-size: 0.92rem;
+  }
+  .alert-card .alert-msg {
+    color: rgba(255,255,255,0.55);
+    font-size: 0.85rem;
+    line-height: 1.5;
+  }
+  .alert-card .alert-time {
+    color: rgba(255,255,255,0.3);
+    font-size: 0.78rem;
+    margin-top: 6px;
+  }
+
+  .all-clear {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 50px 30px;
+    text-align: center;
+    color: rgba(255,255,255,0.45);
+  }
+  .all-clear .check-icon {
+    font-size: 3rem;
+    color: #10b981;
+    margin-bottom: 14px;
+    animation: checkPop 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  @keyframes checkPop {
+    0%   { transform: scale(0); opacity: 0; }
+    60%  { transform: scale(1.2); }
+    100% { transform: scale(1); opacity: 1; }
+  }
+
+  /* ── Form ── */
+  .form-card {
+    background: rgba(255,255,255,0.04);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 16px;
+    padding: 28px 24px;
+    height: fit-content;
+    position: sticky;
+    top: 24px;
+  }
+  .form-card .form-title {
+    font-family: 'Outfit', sans-serif;
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: #e0d4fc;
+    margin-bottom: 6px;
+  }
+  .form-card .form-subtitle {
+    font-size: 0.82rem;
+    color: rgba(255,255,255,0.35);
+    margin-bottom: 22px;
+  }
+  .form-group {
+    margin-bottom: 16px;
+  }
+  .form-group label {
+    display: block;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: rgba(255,255,255,0.55);
+    margin-bottom: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .form-group label .req { color: #f43f5e; }
+  .form-input {
+    width: 100%;
+    padding: 11px 14px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 10px;
+    color: #e0e0e0;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 0.88rem;
+    transition: all 0.3s ease;
+    outline: none;
+    box-sizing: border-box;
+  }
+  .form-input:focus {
+    border-color: rgba(124, 58, 237, 0.5);
+    box-shadow: 0 0 18px rgba(124, 58, 237, 0.12);
+    background: rgba(255,255,255,0.07);
+  }
+  .form-input::placeholder { color: rgba(255,255,255,0.25); }
+
+  .btn-submit {
+    width: 100%;
+    padding: 13px;
+    background: linear-gradient(135deg, #7c3aed, #6d28d9);
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 18px rgba(124, 58, 237, 0.3);
+    margin-top: 6px;
+    letter-spacing: 0.02em;
+  }
+  .btn-submit:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 28px rgba(124, 58, 237, 0.45);
+  }
+  .btn-submit:active { transform: translateY(0); }
+
+  /* ── Empty States ── */
+  .empty-state {
+    text-align: center;
+    padding: 50px 30px;
+    color: rgba(255,255,255,0.35);
+    font-size: 0.92rem;
+  }
+  .empty-state .empty-icon {
+    font-size: 2.5rem;
+    margin-bottom: 14px;
+    opacity: 0.5;
+  }
+  .empty-state .empty-hint {
+    font-size: 0.82rem;
+    color: rgba(255,255,255,0.25);
+    margin-top: 6px;
+  }
+
+  /* ── Section Titles ── */
+  .section-title {
+    font-family: 'Outfit', sans-serif;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: rgba(255,255,255,0.85);
+    margin-bottom: 18px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .section-title .title-icon {
+    font-size: 1.15rem;
+  }
+
+  /* ── Stagger Animations ── */
+  .fade-up {
+    opacity: 0;
+    transform: translateY(18px);
+    animation: fadeUp 0.55s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  }
+  @keyframes fadeUp {
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ── Responsive ── */
+  @media (max-width: 1200px) {
+    .kpi-grid { grid-template-columns: repeat(3, 1fr); }
+    .pred-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+  @media (max-width: 900px) {
+    .split-layout { grid-template-columns: 1fr; }
+    .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+    .pred-grid { grid-template-columns: repeat(2, 1fr); }
+    .dash-header { flex-direction: column; align-items: flex-start; }
+  }
+  @media (max-width: 640px) {
+    .kpi-grid { grid-template-columns: 1fr 1fr; }
+    .pred-grid { grid-template-columns: 1fr; }
+    .tab-btn { min-width: 110px; padding: 11px 14px; font-size: 0.82rem; }
+    .dash-header .greeting { font-size: 1.35rem; }
+    .kpi-value { font-size: 1.6rem; }
+  }
+  @media (max-width: 480px) {
+    .kpi-grid { grid-template-columns: 1fr; }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- ═══════════════════ HEADER ═══════════════════ -->
+<div class="dash-header fade-up">
+  <div>
+    <div class="greeting">
+      Good {{ 'morning' if current_time.hour < 12 else 'afternoon' if current_time.hour < 17 else 'evening' }}, {{ teacher_name|default('Teacher') }} 👋
+    </div>
+    <div class="date-line">📅 {{ summary.date|default(current_time.strftime('%A, %B %d, %Y')) }}</div>
+  </div>
+  <div style="display: flex; gap: 0.75rem; flex-wrap: wrap; align-items: center;">
+    <a href="{{ url_for('generate_poster') }}" class="btn-refresh" style="text-decoration: none; display: inline-flex; align-items: center; background: linear-gradient(135deg, #7c3aed, #4f46e5); color: white; border: none; font-weight: 600;">
+      <span style="margin-right: 6px;">🔲</span> Print QR Poster
+    </a>
+    <form method="POST" action="{{ url_for('refresh_stats') }}" style="margin:0;">
+      <button type="submit" class="btn-refresh">
+        <span>🔄</span> Refresh Stats
+      </button>
+    </form>
+  </div>
+</div>
+
+<!-- ═══════════════════ TAB BAR ═══════════════════ -->
+<div class="tab-bar fade-up" style="animation-delay: 0.08s;">
+  <button class="tab-btn active" data-tab="overview" onclick="switchTab('overview', this)">
+    <span class="tab-icon">📊</span> Overview
+  </button>
+  <button class="tab-btn" data-tab="analytics" onclick="switchTab('analytics', this)">
+    <span class="tab-icon">📈</span> Student Analytics
+  </button>
+  <button class="tab-btn" data-tab="predictions" onclick="switchTab('predictions', this)">
+    <span class="tab-icon">🤖</span> AI Predictions
+  </button>
+  <button class="tab-btn" data-tab="alerts" onclick="switchTab('alerts', this)">
+    <span class="tab-icon">🔔</span> Alerts & Actions
+  </button>
+</div>
+
+
+<!-- ══════════════════════════════════════════════════
+     TAB 1 — OVERVIEW
+     ══════════════════════════════════════════════════ -->
+<div id="tab-overview" class="tab-panel active">
+
+  <!-- KPI Cards -->
+  <div class="kpi-grid">
+    <div class="kpi-card kpi-purple fade-up" style="animation-delay:0.12s;">
+      <span class="kpi-icon">👥</span>
+      <div class="kpi-value">{{ summary.total_students|default(0) }}</div>
+      <div class="kpi-label">Total Students</div>
+    </div>
+    <div class="kpi-card kpi-emerald fade-up" style="animation-delay:0.18s;">
+      <span class="kpi-icon">✅</span>
+      <div class="kpi-value">{{ summary.present|default(0) }}</div>
+      <div class="kpi-label">Present Today</div>
+    </div>
+    <div class="kpi-card kpi-amber fade-up" style="animation-delay:0.24s;">
+      <span class="kpi-icon">⏰</span>
+      <div class="kpi-value">{{ summary.late|default(0) }}</div>
+      <div class="kpi-label">Late Today</div>
+    </div>
+    <div class="kpi-card kpi-rose fade-up" style="animation-delay:0.30s;">
+      <span class="kpi-icon">❌</span>
+      <div class="kpi-value">{{ summary.absent|default(0) }}</div>
+      <div class="kpi-label">Absent Today</div>
+    </div>
+    <div class="kpi-card kpi-cyan fade-up" style="animation-delay:0.36s;">
+      <span class="kpi-icon">📈</span>
+      <div class="kpi-value">{{ summary.attendance_rate|default(0)|round(1) }}%</div>
+      <div class="kpi-label">Attendance Rate</div>
+    </div>
+  </div>
+
+  <!-- High Risk Banner -->
+  {% if summary.high_risk_count|default(0) > 0 %}
+  <div class="high-risk-banner fade-up" style="animation-delay:0.40s;">
+    <span class="banner-icon">⚠️</span>
+    <div class="banner-text">
+      <span class="banner-count">{{ summary.high_risk_count }}</span> student{{ 's' if summary.high_risk_count != 1 else '' }} at <strong>HIGH</strong> risk level — immediate attention recommended.
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Today's Attendance Table -->
+  <div class="table-wrap fade-up" style="animation-delay:0.44s;">
+    <div class="table-toolbar">
+      <div class="toolbar-title">📋 Today's Attendance</div>
+      <div class="search-box">
+        <span class="search-icon">🔍</span>
+        <input type="text" placeholder="Search by name or ID…" id="search-today" oninput="filterTable('today-table', this.value)">
+      </div>
+    </div>
+    <div class="table-responsive">
+      {% if today_records|default([])|length > 0 %}
+      <table class="glass-table" id="today-table">
+        <thead>
+          <tr>
+            <th>Student ID</th>
+            <th>Name</th>
+            <th>Class</th>
+            <th>Status</th>
+            <th>Time In</th>
+            <th>Late (min)</th>
+            <th>Auth Method</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in today_records|default([]) %}
+          <tr data-search="{{ r.student_id|default('')|lower }} {{ r.name|default('')|lower }}">
+            <td style="font-family: monospace; color: rgba(255,255,255,0.55);">{{ r.student_id|default('-') }}</td>
+            <td style="font-weight: 600; color: rgba(255,255,255,0.9);">{{ r.name|default('-') }}</td>
+            <td>{{ r.class|default('-') }}</td>
+            <td>
+              <span class="badge {{ r.status|default('UNKNOWN')|status_color }}">
+                {{ r.status|default('N/A') }}
+              </span>
+            </td>
+            <td>{{ r.time_in|default('-') }}</td>
+            <td>
+              {% if r.minutes_late|default(0) > 0 %}
+                <span style="color: #fbbf24; font-weight: 600;">{{ r.minutes_late }}</span>
+              {% else %}
+                <span style="color: rgba(255,255,255,0.35);">0</span>
+              {% endif %}
+            </td>
+            <td>
+              <span class="badge badge-purple">{{ r.auth_method|default('N/A') }}</span>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+      <div class="empty-state">
+        <div class="empty-icon">📭</div>
+        <div>No attendance records for today yet.</div>
+        <div class="empty-hint">Records will appear as students check in.</div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════════════════
+     TAB 2 — STUDENT ANALYTICS
+     ══════════════════════════════════════════════════ -->
+<div id="tab-analytics" class="tab-panel">
+
+  <div class="table-wrap fade-up">
+    <div class="table-toolbar">
+      <div class="toolbar-title">🧠 Behavior Analytics</div>
+      <div class="search-box">
+        <span class="search-icon">🔍</span>
+        <input type="text" placeholder="Search students…" id="search-analytics" oninput="filterTable('analytics-table', this.value)">
+      </div>
+    </div>
+    <div class="table-responsive">
+      {% if all_stats|default([])|length > 0 %}
+      <table class="glass-table" id="analytics-table">
+        <thead>
+          <tr>
+            <th class="sortable" onclick="sortTable('analytics-table', 0, 'string', this)">Student ID <span class="sort-arrow">▲</span></th>
+            <th class="sortable" onclick="sortTable('analytics-table', 1, 'string', this)">Name <span class="sort-arrow">▲</span></th>
+            <th class="sortable" onclick="sortTable('analytics-table', 2, 'string', this)">Class <span class="sort-arrow">▲</span></th>
+            <th class="sortable" onclick="sortTable('analytics-table', 3, 'number', this)">Total Classes <span class="sort-arrow">▲</span></th>
+            <th class="sortable" onclick="sortTable('analytics-table', 4, 'number', this)">Absent % <span class="sort-arrow">▲</span></th>
+            <th class="sortable" onclick="sortTable('analytics-table', 5, 'number', this)">Late % <span class="sort-arrow">▲</span></th>
+            <th class="sortable" onclick="sortTable('analytics-table', 6, 'number', this)">Avg Late (min) <span class="sort-arrow">▲</span></th>
+            <th class="sortable" onclick="sortTable('analytics-table', 7, 'number', this)">Max Streak <span class="sort-arrow">▲</span></th>
+            <th class="sortable" onclick="sortTable('analytics-table', 8, 'string', this)">Risk Level <span class="sort-arrow">▲</span></th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for s in all_stats|default([]) %}
+          <tr data-search="{{ s.student_id|default('')|lower }} {{ s.name|default('')|lower }}"
+              class="{{ 'row-high-risk' if s.risk_level|default('LOW') == 'HIGH' else '' }}">
+            <td style="font-family: monospace; color: rgba(255,255,255,0.55);">{{ s.student_id|default('-') }}</td>
+            <td style="font-weight: 600; color: rgba(255,255,255,0.9);">{{ s.name|default('-') }}</td>
+            <td>{{ s.class|default('-') }}</td>
+            <td>{{ s.total_classes|default(0) }}</td>
+            <td>{{ s.absent_pct|default(0)|format_pct }}</td>
+            <td>{{ s.late_pct|default(0)|format_pct }}</td>
+            <td>{{ s.avg_minutes_late|default(0)|round(1) }}</td>
+            <td>
+              {% if s.max_absent_streak|default(0) >= 3 %}
+                <span style="color: #fb7185; font-weight: 700;">{{ s.max_absent_streak }}</span>
+              {% else %}
+                {{ s.max_absent_streak|default(0) }}
+              {% endif %}
+            </td>
+            <td>
+              <span class="badge {{ s.risk_level|default('LOW')|risk_color }} {{ 'badge-glow-red' if s.risk_level|default('LOW') == 'HIGH' else 'badge-glow-green' if s.risk_level|default('LOW') == 'LOW' else 'badge-glow-amber' }}">
+                {{ s.risk_level|default('LOW') }}
+              </span>
+            </td>
+            <td>
+              <form method="POST" action="{{ url_for('delete_student_route', student_id=s.student_id) }}" style="margin:0;" onsubmit="return confirm('Are you sure you want to delete student {{ s.name }}? This will also delete all of their attendance records!');">
+                <button type="submit" style="background: rgba(244, 63, 94, 0.15); border: 1px solid rgba(244, 63, 94, 0.3); color: #fda4af; padding: 5px 12px; border-radius: 6px; font-size: 0.72rem; font-weight: 700; cursor: pointer; transition: all 0.2s ease;" onmouseover="this.style.background='rgba(244, 63, 94, 0.3)'" onmouseout="this.style.background='rgba(244, 63, 94, 0.15)'">
+                  🗑️ Delete
+                </button>
+              </form>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+      <div class="empty-state">
+        <div class="empty-icon">📊</div>
+        <div>No analytics data available.</div>
+        <div class="empty-hint">Try refreshing stats to generate analytics.</div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════════════════
+     TAB 3 — AI PREDICTIONS
+     ══════════════════════════════════════════════════ -->
+<div id="tab-predictions" class="tab-panel">
+
+  <div class="section-title fade-up">
+    <span class="title-icon">🤖</span> AI-Powered Risk Predictions
+  </div>
+
+  {% set sorted_predictions = predictions|default([])|sort(attribute='probability_high', reverse=True) %}
+
+  {% if sorted_predictions|length > 0 %}
+  <div class="pred-grid">
+    {% for p in sorted_predictions %}
+    <div class="pred-card fade-up {{ 'pred-high' if p.risk_prediction|default('LOW') == 'HIGH' else '' }}" style="animation-delay: {{ (loop.index * 0.06)|round(2) }}s;">
+      <div class="pred-name">{{ p.name|default('Unknown') }}</div>
+      <div class="pred-meta">{{ p.student_id|default('-') }} · {{ p.class|default('-') }}</div>
+      <div class="pred-badge-row">
+        <span class="badge {{ p.risk_prediction|default('LOW')|risk_color }} {{ 'badge-glow-red' if p.risk_prediction|default('LOW') == 'HIGH' else 'badge-glow-green' }}">
+          {{ p.risk_prediction|default('LOW') }} RISK
+        </span>
+      </div>
+      {% set prob = p.probability_high|default(0)|float|round(1) %}
+      <div class="prob-bar-wrap">
+        <div class="prob-bar {{ 'bar-red' if prob >= 60 else 'bar-amber' if prob >= 35 else 'bar-green' }}"
+             style="width: 0%;"
+             data-width="{{ prob }}%"></div>
+      </div>
+      <div class="prob-pct {{ 'pct-red' if prob >= 60 else 'pct-amber' if prob >= 35 else 'pct-green' }}">
+        Probability: {{ prob }}%
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="table-wrap">
+    <div class="empty-state">
+      <div class="empty-icon">🔮</div>
+      <div>No prediction data available.</div>
+      <div class="empty-hint">Ensure students have enough attendance records for AI analysis.</div>
+    </div>
+  </div>
+  {% endif %}
+</div>
+
+
+<!-- ══════════════════════════════════════════════════
+     TAB 4 — ALERTS & ACTIONS
+     ══════════════════════════════════════════════════ -->
+<div id="tab-alerts" class="tab-panel">
+
+  <div class="split-layout">
+    <!-- Alerts Panel -->
+    <div>
+      <div class="section-title fade-up">
+        <span class="title-icon">🔔</span> Active Alerts
+      </div>
+      <div class="alerts-panel">
+        {% if alerts|default([])|length > 0 %}
+          {% for a in alerts|default([]) %}
+          <div class="alert-card fade-up" style="animation-delay: {{ (loop.index * 0.07)|round(2) }}s;">
+            <div class="alert-icon">
+              {% if a.severity|default('INFO') == 'CRITICAL' %}🚨
+              {% elif a.severity|default('INFO') == 'WARNING' %}⚠️
+              {% else %}ℹ️{% endif %}
+            </div>
+            <div class="alert-body">
+              <div class="alert-top">
+                <span class="alert-student">{{ a.name|default('Unknown') }}</span>
+                <span class="badge {{ a.severity|default('INFO')|severity_color }}" style="font-size: 0.68rem;">
+                  {{ a.alert_type|default('ALERT') }}
+                </span>
+                <span class="badge {{ a.severity|default('INFO')|severity_color }}" style="font-size: 0.65rem;">
+                  {{ a.severity|default('INFO') }}
+                </span>
+              </div>
+              <div class="alert-msg">{{ a.message|default('No details.') }}</div>
+              <div class="alert-time">
+                <span style="margin-right:4px;">🕐</span>
+                {{ a.triggered_at|default('Unknown time') }}
+                <span style="margin-left: 10px; color: rgba(255,255,255,0.25);">ID: {{ a.student_id|default('-') }}</span>
+              </div>
+            </div>
+          </div>
+          {% endfor %}
+        {% else %}
+          <div class="table-wrap">
+            <div class="all-clear">
+              <div class="check-icon">✅</div>
+              <div style="font-size: 1.05rem; font-weight: 600; color: rgba(255,255,255,0.65); margin-bottom: 6px;">All Clear!</div>
+              <div>No unread alerts at this time.</div>
+            </div>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Add Student Form -->
+    <div>
+      <div class="section-title fade-up">
+        <span class="title-icon">➕</span> Quick Actions
+      </div>
+      <div class="form-card fade-up" style="animation-delay: 0.15s;">
+        <div class="form-title">Register New Student</div>
+        <div class="form-subtitle">Add a student to the attendance system</div>
+
+        <form method="POST" action="{{ url_for('add_student') }}">
+          <div class="form-group">
+            <label>Student ID <span class="req">*</span></label>
+            <input type="text" name="student_id" class="form-input" placeholder="e.g., BCA_030" required>
+          </div>
+          <div class="form-group">
+            <label>Full Name <span class="req">*</span></label>
+            <input type="text" name="name" class="form-input" placeholder="Enter student's full name" required>
+          </div>
+          <div class="form-group">
+            <label>Class / Section <span class="req">*</span></label>
+            <input type="text" name="class_" class="form-input" placeholder="e.g., BCA-3A" required>
+          </div>
+          <div class="form-group">
+            <label>Email</label>
+            <input type="email" name="email" class="form-input" placeholder="student@email.com (optional)">
+          </div>
+          <div class="form-group">
+            <label>Phone</label>
+            <input type="tel" name="phone" class="form-input" placeholder="Phone number (optional)">
+          </div>
+          <button type="submit" class="btn-submit">
+            ➕ Add Student
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+
+{% block extra_js %}
+<script>
+  /* ═══════════════════════════════════════
+     TAB SWITCHING
+     ═══════════════════════════════════════ */
+  function switchTab(tabId, btn) {
+    // Hide all panels
+    document.querySelectorAll('.tab-panel').forEach(function(p) {
+      p.classList.remove('active');
+    });
+    // Deactivate all buttons
+    document.querySelectorAll('.tab-btn').forEach(function(b) {
+      b.classList.remove('active');
+    });
+    // Show selected panel
+    var panel = document.getElementById('tab-' + tabId);
+    if (panel) {
+      panel.classList.add('active');
+      // Re-trigger fade-up animations inside the panel
+      panel.querySelectorAll('.fade-up').forEach(function(el) {
+        el.style.animation = 'none';
+        el.offsetHeight; // force reflow
+        el.style.animation = '';
+      });
+    }
+    // Activate the button
+    btn.classList.add('active');
+
+    // Animate probability bars if switching to predictions tab
+    if (tabId === 'predictions') {
+      setTimeout(animateProbBars, 100);
+    }
+  }
+
+  /* ═══════════════════════════════════════
+     TABLE SEARCH / FILTER
+     ═══════════════════════════════════════ */
+  function filterTable(tableId, query) {
+    var table = document.getElementById(tableId);
+    if (!table) return;
+    var rows = table.querySelectorAll('tbody tr');
+    var q = query.toLowerCase().trim();
+    rows.forEach(function(row) {
+      var searchData = row.getAttribute('data-search') || '';
+      row.style.display = searchData.indexOf(q) !== -1 ? '' : 'none';
+    });
+  }
+
+  /* ═══════════════════════════════════════
+     COLUMN SORTING
+     ═══════════════════════════════════════ */
+  var sortDirections = {};
+
+  function sortTable(tableId, colIndex, type, thEl) {
+    var table = document.getElementById(tableId);
+    if (!table) return;
+    var tbody = table.querySelector('tbody');
+    var rows = Array.from(tbody.querySelectorAll('tr'));
+
+    // Determine sort direction
+    var key = tableId + '-' + colIndex;
+    sortDirections[key] = !sortDirections[key]; // toggle
+    var asc = sortDirections[key];
+
+    // Reset all sort-active classes
+    var headers = table.querySelectorAll('thead th');
+    headers.forEach(function(h) { h.classList.remove('sort-active'); });
+    thEl.classList.add('sort-active');
+
+    // Update arrow
+    var arrow = thEl.querySelector('.sort-arrow');
+    if (arrow) arrow.textContent = asc ? '▲' : '▼';
+
+    rows.sort(function(a, b) {
+      var aVal = a.children[colIndex] ? a.children[colIndex].textContent.trim() : '';
+      var bVal = b.children[colIndex] ? b.children[colIndex].textContent.trim() : '';
+
+      if (type === 'number') {
+        aVal = parseFloat(aVal.replace('%', '').replace(',', '')) || 0;
+        bVal = parseFloat(bVal.replace('%', '').replace(',', '')) || 0;
+      } else {
+        aVal = aVal.toLowerCase();
+        bVal = bVal.toLowerCase();
+      }
+
+      if (aVal < bVal) return asc ? -1 : 1;
+      if (aVal > bVal) return asc ? 1 : -1;
+      return 0;
+    });
+
+    // Re-append sorted rows
+    rows.forEach(function(row) {
+      tbody.appendChild(row);
+    });
+  }
+
+  /* ═══════════════════════════════════════
+     PROBABILITY BAR ANIMATION
+     ═══════════════════════════════════════ */
+  function animateProbBars() {
+    document.querySelectorAll('.prob-bar[data-width]').forEach(function(bar) {
+      bar.style.width = bar.getAttribute('data-width');
+    });
+  }
+
+  /* ═══════════════════════════════════════
+     STAGGER FADE-IN ANIMATIONS
+     ═══════════════════════════════════════ */
+  function staggerFadeIn() {
+    var els = document.querySelectorAll('#tab-overview .fade-up');
+    els.forEach(function(el, i) {
+      el.style.animationDelay = (i * 0.06) + 's';
+    });
+  }
+
+  /* ═══════════════════════════════════════
+     INIT
+     ═══════════════════════════════════════ */
+  document.addEventListener('DOMContentLoaded', function() {
+    staggerFadeIn();
+    // Animate probability bars if predictions tab is already active
+    setTimeout(animateProbBars, 600);
+  });
+</script>
+{% endblock %}

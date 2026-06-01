@@ -1,0 +1,789 @@
+{% extends 'base.html' %}
+
+{% block extra_css %}
+<style>
+  /* ===== General Page ===== */
+  .dashboard-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem 1rem;
+  }
+
+  /* ===== Welcome Header ===== */
+  .welcome-header {
+    background: linear-gradient(135deg, rgba(124,58,237,0.15) 0%, rgba(6,182,212,0.08) 100%);
+    border: 1px solid rgba(124,58,237,0.2);
+    border-radius: 20px;
+    padding: 2rem 2.5rem;
+    margin-bottom: 2rem;
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 1rem;
+    animation: fadeInDown 0.6s ease;
+  }
+  .welcome-header h1 {
+    font-family: 'Outfit', sans-serif;
+    font-size: 2rem;
+    font-weight: 700;
+    background: linear-gradient(135deg, #e0e0ff 0%, #a855f7 50%, #06b6d4 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin: 0;
+    flex: 1 1 100%;
+  }
+  .badge-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.6rem;
+    flex: 1 1 100%;
+  }
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.3rem 0.85rem;
+    border-radius: 999px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    letter-spacing: 0.03em;
+    border: 1px solid rgba(255,255,255,0.1);
+  }
+  .badge-id {
+    background: rgba(124,58,237,0.18);
+    color: #c4b5fd;
+    border-color: rgba(124,58,237,0.3);
+  }
+  .badge-class {
+    background: rgba(6,182,212,0.15);
+    color: #67e8f9;
+    border-color: rgba(6,182,212,0.25);
+  }
+  .badge-risk-low {
+    background: rgba(16,185,129,0.15);
+    color: #6ee7b7;
+    border-color: rgba(16,185,129,0.3);
+  }
+  .badge-risk-medium {
+    background: rgba(245,158,11,0.15);
+    color: #fcd34d;
+    border-color: rgba(245,158,11,0.3);
+  }
+  .badge-risk-high {
+    background: rgba(244,63,94,0.15);
+    color: #fda4af;
+    border-color: rgba(244,63,94,0.3);
+  }
+  .badge-trend-improving {
+    background: rgba(16,185,129,0.15);
+    color: #6ee7b7;
+    border-color: rgba(16,185,129,0.3);
+  }
+  .badge-trend-stable {
+    background: rgba(245,158,11,0.15);
+    color: #fcd34d;
+    border-color: rgba(245,158,11,0.3);
+  }
+  .badge-trend-worsening {
+    background: rgba(244,63,94,0.15);
+    color: #fda4af;
+    border-color: rgba(244,63,94,0.3);
+  }
+  .badge-today-on-time {
+    background: rgba(16,185,129,0.18);
+    color: #6ee7b7;
+    border-color: rgba(16,185,129,0.35);
+  }
+  .badge-today-late {
+    background: rgba(245,158,11,0.18);
+    color: #fcd34d;
+    border-color: rgba(245,158,11,0.35);
+  }
+  .badge-today-muted {
+    background: rgba(255,255,255,0.05);
+    color: rgba(255,255,255,0.4);
+    border-color: rgba(255,255,255,0.08);
+  }
+
+  /* ===== Glass Card Base ===== */
+  .glass-card {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 16px;
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    padding: 1.5rem;
+    transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+  }
+  .glass-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 40px rgba(0,0,0,0.3);
+    border-color: rgba(255,255,255,0.12);
+  }
+
+  /* ===== QR Code Card ===== */
+  .qr-section {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 2.5rem;
+    animation: fadeInUp 0.7s ease 0.1s both;
+  }
+  .qr-card {
+    background: rgba(124,58,237,0.06);
+    border: 1px solid rgba(124,58,237,0.25);
+    border-radius: 20px;
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    padding: 2rem 2.5rem;
+    text-align: center;
+    max-width: 380px;
+    width: 100%;
+    position: relative;
+    overflow: hidden;
+    box-shadow:
+      0 0 30px rgba(124,58,237,0.12),
+      0 0 60px rgba(124,58,237,0.06),
+      inset 0 1px 0 rgba(255,255,255,0.06);
+  }
+  .qr-card::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: conic-gradient(from 0deg, transparent, rgba(124,58,237,0.08), transparent 30%);
+    animation: qrGlow 6s linear infinite;
+    pointer-events: none;
+  }
+  @keyframes qrGlow {
+    to { transform: rotate(360deg); }
+  }
+  .qr-card h3 {
+    font-family: 'Outfit', sans-serif;
+    font-size: 1.15rem;
+    font-weight: 600;
+    color: #e0e0ff;
+    margin: 0 0 1.25rem 0;
+    position: relative;
+  }
+  .qr-image-wrap {
+    background: rgba(255,255,255,0.95);
+    border-radius: 16px;
+    padding: 12px;
+    display: inline-block;
+    margin-bottom: 1rem;
+    position: relative;
+    box-shadow: 0 4px 20px rgba(124,58,237,0.2);
+  }
+  .qr-image-wrap img {
+    display: block;
+  }
+  .qr-valid-text {
+    font-size: 0.82rem;
+    color: rgba(255,255,255,0.45);
+    margin: 0.5rem 0 0.75rem 0;
+    position: relative;
+  }
+  .qr-timer {
+    font-family: 'Outfit', sans-serif;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #c4b5fd;
+    margin: 0 0 0.5rem 0;
+    position: relative;
+  }
+  .qr-timer span {
+    color: #a855f7;
+  }
+  .qr-helper {
+    font-size: 0.75rem;
+    color: rgba(255,255,255,0.3);
+    margin: 0.5rem 0 1rem 0;
+    position: relative;
+  }
+  .qr-refresh-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.5rem 1.2rem;
+    background: linear-gradient(135deg, rgba(124,58,237,0.3), rgba(168,85,247,0.2));
+    border: 1px solid rgba(124,58,237,0.4);
+    color: #c4b5fd;
+    border-radius: 10px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+  }
+  .qr-refresh-btn:hover {
+    background: linear-gradient(135deg, rgba(124,58,237,0.5), rgba(168,85,247,0.35));
+    box-shadow: 0 0 20px rgba(124,58,237,0.3);
+    transform: translateY(-2px);
+  }
+
+  /* ===== KPI Cards ===== */
+  .kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1.25rem;
+    margin-bottom: 2.5rem;
+  }
+  .kpi-card {
+    position: relative;
+    overflow: hidden;
+    text-align: center;
+    padding: 1.5rem 1rem;
+    opacity: 0;
+    animation: fadeInUp 0.5s ease forwards;
+  }
+  .kpi-card:nth-child(1) { animation-delay: 0.15s; }
+  .kpi-card:nth-child(2) { animation-delay: 0.25s; }
+  .kpi-card:nth-child(3) { animation-delay: 0.35s; }
+  .kpi-card:nth-child(4) { animation-delay: 0.45s; }
+  .kpi-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    border-radius: 3px 3px 0 0;
+  }
+  .kpi-card.accent-purple::before { background: linear-gradient(90deg, #7c3aed, #a855f7); }
+  .kpi-card.accent-emerald::before { background: linear-gradient(90deg, #059669, #10b981); }
+  .kpi-card.accent-amber::before { background: linear-gradient(90deg, #d97706, #f59e0b); }
+  .kpi-card.accent-rose::before { background: linear-gradient(90deg, #e11d48, #f43f5e); }
+
+  .kpi-value {
+    font-family: 'Outfit', sans-serif;
+    font-size: 2.2rem;
+    font-weight: 700;
+    margin: 0.5rem 0 0.25rem 0;
+    line-height: 1;
+  }
+  .kpi-card.accent-purple .kpi-value { color: #c4b5fd; }
+  .kpi-card.accent-emerald .kpi-value { color: #6ee7b7; }
+  .kpi-card.accent-amber .kpi-value { color: #fcd34d; }
+  .kpi-card.accent-rose .kpi-value { color: #fda4af; }
+
+  .kpi-label {
+    font-size: 0.82rem;
+    font-weight: 500;
+    color: rgba(255,255,255,0.45);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .kpi-sub {
+    font-size: 0.72rem;
+    color: rgba(255,255,255,0.3);
+    margin-top: 0.35rem;
+  }
+
+  /* Circular Progress Ring */
+  .circular-progress {
+    width: 90px;
+    height: 90px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto;
+    position: relative;
+  }
+  .circular-progress .progress-value {
+    font-family: 'Outfit', sans-serif;
+    font-size: 1.35rem;
+    font-weight: 700;
+    color: #c4b5fd;
+    position: relative;
+    z-index: 1;
+  }
+  .circular-progress::after {
+    content: '';
+    position: absolute;
+    inset: 6px;
+    border-radius: 50%;
+    background: rgba(15,14,23,0.9);
+  }
+  .circular-progress .progress-value {
+    z-index: 2;
+    position: relative;
+  }
+
+  /* ===== Section Title ===== */
+  .section-title {
+    font-family: 'Outfit', sans-serif;
+    font-size: 1.35rem;
+    font-weight: 600;
+    color: #e0e0ff;
+    margin: 0 0 1.25rem 0;
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+  }
+  .section-title::before {
+    content: '';
+    width: 4px;
+    height: 22px;
+    background: linear-gradient(180deg, #7c3aed, #a855f7);
+    border-radius: 2px;
+  }
+
+  /* ===== Day-of-Week Bar Chart ===== */
+  .dow-section {
+    margin-bottom: 2.5rem;
+    animation: fadeInUp 0.7s ease 0.3s both;
+  }
+  .bar-chart {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+  .bar-row {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+  .bar-day {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: rgba(255,255,255,0.65);
+    min-width: 90px;
+    text-align: right;
+  }
+  .bar-track {
+    flex: 1;
+    position: relative;
+    height: 32px;
+    background: rgba(255,255,255,0.03);
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid rgba(255,255,255,0.05);
+  }
+  .bar-fill {
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 100%;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    padding-left: 0.6rem;
+    font-size: 0.72rem;
+    font-weight: 600;
+    transition: width 1s ease;
+    min-width: fit-content;
+  }
+  .bar-fill.absent {
+    background: linear-gradient(90deg, rgba(244,63,94,0.35), rgba(244,63,94,0.15));
+    color: #fda4af;
+    z-index: 1;
+  }
+  .bar-fill.late {
+    background: linear-gradient(90deg, rgba(245,158,11,0.35), rgba(245,158,11,0.15));
+    color: #fcd34d;
+    z-index: 2;
+    top: 50%;
+    height: 50%;
+    border-radius: 0 0 8px 8px;
+  }
+  .bar-labels {
+    display: flex;
+    gap: 0.75rem;
+    min-width: 100px;
+    font-size: 0.72rem;
+    color: rgba(255,255,255,0.4);
+  }
+  .bar-labels .absent-label { color: #fda4af; }
+  .bar-labels .late-label { color: #fcd34d; }
+  .no-data-msg {
+    text-align: center;
+    color: rgba(255,255,255,0.3);
+    font-size: 0.9rem;
+    padding: 2rem;
+  }
+  .chart-legend {
+    display: flex;
+    gap: 1.5rem;
+    margin-bottom: 1rem;
+    padding-left: calc(90px + 1rem);
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.75rem;
+    color: rgba(255,255,255,0.45);
+  }
+  .legend-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 3px;
+  }
+  .legend-dot.absent { background: rgba(244,63,94,0.6); }
+  .legend-dot.late { background: rgba(245,158,11,0.6); }
+
+  /* ===== Timeline ===== */
+  .timeline-section {
+    margin-bottom: 2rem;
+    animation: fadeInUp 0.7s ease 0.4s both;
+  }
+  .timeline {
+    position: relative;
+    padding-left: 2.5rem;
+  }
+  .timeline::before {
+    content: '';
+    position: absolute;
+    left: 11px;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: linear-gradient(180deg, rgba(124,58,237,0.4), rgba(124,58,237,0.05));
+    border-radius: 1px;
+  }
+  .timeline-entry {
+    position: relative;
+    margin-bottom: 1rem;
+  }
+  .timeline-entry::before {
+    content: '';
+    position: absolute;
+    left: -2.5rem;
+    top: 1.2rem;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    border: 2px solid rgba(124,58,237,0.6);
+    background: #0f0e17;
+    z-index: 1;
+    margin-left: 6px;
+  }
+  .timeline-entry.status-on-time::before {
+    border-color: #10b981;
+    box-shadow: 0 0 8px rgba(16,185,129,0.4);
+  }
+  .timeline-entry.status-late::before {
+    border-color: #f59e0b;
+    box-shadow: 0 0 8px rgba(245,158,11,0.4);
+  }
+  .timeline-entry.status-absent::before {
+    border-color: #f43f5e;
+    box-shadow: 0 0 8px rgba(244,63,94,0.4);
+  }
+  .timeline-card {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 12px;
+    padding: 1rem 1.25rem;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.6rem 1rem;
+    transition: all 0.3s ease;
+  }
+  .timeline-card:hover {
+    background: rgba(255,255,255,0.05);
+    border-color: rgba(255,255,255,0.1);
+  }
+  .tl-date {
+    font-family: 'Outfit', sans-serif;
+    font-size: 0.92rem;
+    font-weight: 600;
+    color: rgba(255,255,255,0.8);
+  }
+  .tl-time {
+    font-size: 0.82rem;
+    color: rgba(255,255,255,0.4);
+  }
+  .tl-status {
+    padding: 0.2rem 0.7rem;
+    border-radius: 999px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .tl-status.on-time {
+    background: rgba(16,185,129,0.15);
+    color: #6ee7b7;
+    border: 1px solid rgba(16,185,129,0.3);
+  }
+  .tl-status.late {
+    background: rgba(245,158,11,0.15);
+    color: #fcd34d;
+    border: 1px solid rgba(245,158,11,0.3);
+  }
+  .tl-status.absent {
+    background: rgba(244,63,94,0.15);
+    color: #fda4af;
+    border: 1px solid rgba(244,63,94,0.3);
+  }
+  .tl-minutes {
+    font-size: 0.78rem;
+    color: #fcd34d;
+    opacity: 0.75;
+  }
+  .tl-auth {
+    margin-left: auto;
+    padding: 0.18rem 0.6rem;
+    border-radius: 6px;
+    font-size: 0.68rem;
+    font-weight: 600;
+    background: rgba(124,58,237,0.12);
+    color: #c4b5fd;
+    border: 1px solid rgba(124,58,237,0.2);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  .empty-state {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: rgba(255,255,255,0.3);
+    font-size: 0.9rem;
+  }
+  .empty-state-icon {
+    font-size: 2.5rem;
+    margin-bottom: 0.75rem;
+    opacity: 0.4;
+  }
+
+  /* ===== Animations ===== */
+  @keyframes fadeInDown {
+    from { opacity: 0; transform: translateY(-20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ===== Responsive ===== */
+  @media (max-width: 900px) {
+    .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+    .chart-legend { padding-left: 0; }
+  }
+  @media (max-width: 600px) {
+    .welcome-header { padding: 1.25rem 1.5rem; }
+    .welcome-header h1 { font-size: 1.45rem; }
+    .kpi-grid { grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+    .qr-card { padding: 1.25rem; }
+    .qr-image-wrap img { width: 200px; height: 200px; }
+    .bar-day { min-width: 50px; font-size: 0.75rem; }
+    .timeline { padding-left: 2rem; }
+    .timeline-entry::before { left: -2rem; }
+    .tl-auth { margin-left: 0; }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+
+  {# ============================== 1. WELCOME HEADER ============================== #}
+  <div class="welcome-header">
+    <h1>Welcome back, {{ student.name|default('Student') }}</h1>
+    <div class="badge-row">
+      <span class="badge badge-id">🆔 {{ student.student_id|default('—') }}</span>
+      <span class="badge badge-class">📚 {{ student.class|default('—') }}</span>
+
+      {# Risk Level Badge #}
+      {% set risk = stats.risk_level|default('LOW')|upper %}
+      {% if risk == 'HIGH' %}
+        <span class="badge badge-risk-high">⚠ HIGH RISK</span>
+      {% elif risk == 'MEDIUM' %}
+        <span class="badge badge-risk-medium">⚡ MEDIUM RISK</span>
+      {% else %}
+        <span class="badge badge-risk-low">✓ LOW RISK</span>
+      {% endif %}
+
+      {# Trend Indicator #}
+      {% set t = trend|default('STABLE')|upper %}
+      {% if t == 'IMPROVING' %}
+        <span class="badge badge-trend-improving">↑ IMPROVING</span>
+      {% elif t == 'WORSENING' %}
+        <span class="badge badge-trend-worsening">↓ WORSENING</span>
+      {% else %}
+        <span class="badge badge-trend-stable">→ STABLE</span>
+      {% endif %}
+
+      {# Today's Status #}
+      {% if today_record %}
+        {% if today_record.status|default('')|upper == 'LATE' %}
+          <span class="badge badge-today-late">📋 Marked: LATE</span>
+        {% else %}
+          <span class="badge badge-today-on-time">📋 Marked: ON TIME</span>
+        {% endif %}
+      {% else %}
+        <span class="badge badge-today-muted">📋 Not yet marked</span>
+      {% endif %}
+    </div>
+  </div>
+
+  {# ============================== 2. GEOLOCATION ATTENDANCE CARD ============================== #}
+  <div class="qr-section">
+    <div class="qr-card glass-card" style="max-width: 500px; padding: 2.5rem 2rem;">
+      <h3 style="font-family: 'Outfit', sans-serif; font-size: 1.35rem; font-weight: 700; color: #e0d4fc; margin-bottom: 0.75rem;">🏫 Campus Geolocation Check-In</h3>
+      <p style="font-size: 0.9rem; color: rgba(255,255,255,0.55); margin-bottom: 1.75rem; line-height: 1.5;">
+        To register your attendance, you must scan the static **QR code poster** hung on the college wall, or check in directly from your phone while on campus (within 500 meters).
+      </p>
+      
+      {% if today_record %}
+        <div style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.25); border-radius: 14px; padding: 1.25rem; margin-bottom: 0.5rem; text-align: center;">
+          <span style="font-size: 2rem; display: block; margin-bottom: 0.5rem;">✅</span>
+          <strong style="color: #34d399; font-size: 1rem; display: block; margin-bottom: 0.25rem;">Attendance Already Marked Today</strong>
+          <span style="color: rgba(255, 255, 255, 0.45); font-size: 0.8rem;">
+            Time In: {{ today_record.time_in }} | Status: {{ today_record.status }}
+          </span>
+        </div>
+      {% else %}
+        <a href="{{ url_for('mark_attendance_page') }}" class="qr-refresh-btn" style="text-decoration: none; display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; background: linear-gradient(135deg, #7c3aed, #4f46e5); color: white; border: none; font-weight: 700; width: 100%; padding: 1.1rem; border-radius: 12px; box-shadow: 0 4px 18px rgba(124, 58, 237, 0.35); transition: all 0.3s ease;">
+          <span>📍</span> Check-In Now
+        </a>
+        <p class="qr-helper" style="margin-top: 1rem; font-size: 0.78rem; color: rgba(255,255,255,0.35);">
+          * Geofencing requires location permission in your mobile browser.
+        </p>
+      {% endif %}
+    </div>
+  </div>
+
+  {# ============================== 3. KPI CARDS ROW ============================== #}
+  {% set total = stats.total_classes|default(1)|int %}
+  {% set present = stats.present_count|default(0)|int %}
+  {% set late = stats.late_count|default(0)|int %}
+  {% set absent = stats.absent_count|default(0)|int %}
+  {% set attendance_pct = ((present + late) / total * 100)|round(1) %}
+
+  <div class="kpi-grid">
+    {# Card 1 – Attendance Rate with circular progress #}
+    <div class="glass-card kpi-card accent-purple">
+      <div class="circular-progress" style="background: conic-gradient(#7c3aed {{ attendance_pct * 3.6 }}deg, rgba(255,255,255,0.06) 0deg);">
+        <span class="progress-value">{{ attendance_pct }}%</span>
+      </div>
+      <div class="kpi-label">Attendance Rate</div>
+    </div>
+
+    {# Card 2 – Present #}
+    <div class="glass-card kpi-card accent-emerald">
+      <div class="kpi-value">{{ present }}</div>
+      <div class="kpi-label">Present</div>
+    </div>
+
+    {# Card 3 – Late #}
+    <div class="glass-card kpi-card accent-amber">
+      <div class="kpi-value">{{ late }}</div>
+      <div class="kpi-label">Late</div>
+      <div class="kpi-sub">avg {{ stats.avg_minutes_late|default(0)|float|round(0)|int }} min</div>
+    </div>
+
+    {# Card 4 – Absent #}
+    <div class="glass-card kpi-card accent-rose">
+      <div class="kpi-value">{{ absent }}</div>
+      <div class="kpi-label">Absent</div>
+      <div class="kpi-sub">streak {{ stats.max_absent_streak|default(0)|int }}</div>
+    </div>
+  </div>
+
+  {# ============================== 4. DAY-OF-WEEK ANALYSIS ============================== #}
+  <div class="dow-section glass-card">
+    <h2 class="section-title">Weekly Pattern</h2>
+
+    {% if dow_pattern %}
+      <div class="chart-legend">
+        <div class="legend-item"><span class="legend-dot absent"></span> Absent %</div>
+        <div class="legend-item"><span class="legend-dot late"></span> Late %</div>
+      </div>
+      <div class="bar-chart">
+        {% for day in ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'] %}
+          {% if day in dow_pattern %}
+            {% set d = dow_pattern[day] %}
+            {% set a_pct = d.absent_pct|default(0)|float|round(1) %}
+            {% set l_pct = d.late_pct|default(0)|float|round(1) %}
+            <div class="bar-row">
+              <div class="bar-day">{{ day[:3] }}</div>
+              <div class="bar-track">
+                <div class="bar-fill absent" style="width: {{ [a_pct, 3]|max if a_pct > 0 else 0 }}%;">
+                  {% if a_pct > 0 %}{{ a_pct }}%{% endif %}
+                </div>
+                <div class="bar-fill late" style="width: {{ [l_pct, 3]|max if l_pct > 0 else 0 }}%;">
+                  {% if l_pct > 0 %}{{ l_pct }}%{% endif %}
+                </div>
+              </div>
+              <div class="bar-labels">
+                <span class="absent-label">A {{ a_pct }}%</span>
+                <span class="late-label">L {{ l_pct }}%</span>
+              </div>
+            </div>
+          {% endif %}
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="no-data-msg">
+        <div class="empty-state-icon">📊</div>
+        Not enough data yet
+      </div>
+    {% endif %}
+  </div>
+
+  {# ============================== 5. ATTENDANCE HISTORY TIMELINE ============================== #}
+  <div class="timeline-section">
+    <h2 class="section-title">Recent Attendance History</h2>
+
+    {% if history %}
+      <div class="timeline">
+        {% for entry in history[:15] %}
+          {% set s = entry.status|default('ABSENT')|upper %}
+          <div class="timeline-entry {% if s == 'ON TIME' or s == 'PRESENT' %}status-on-time{% elif s == 'LATE' %}status-late{% else %}status-absent{% endif %}">
+            <div class="timeline-card">
+              <span class="tl-date">{{ entry.date|default('—') }}</span>
+              <span class="tl-time">{{ entry.time_in|default('—') }}</span>
+
+              {% if s == 'ON TIME' or s == 'PRESENT' %}
+                <span class="tl-status on-time">On Time</span>
+              {% elif s == 'LATE' %}
+                <span class="tl-status late">Late</span>
+                {% if entry.minutes_late|default(0)|int > 0 %}
+                  <span class="tl-minutes">+{{ entry.minutes_late|int }} min</span>
+                {% endif %}
+              {% else %}
+                <span class="tl-status absent">Absent</span>
+              {% endif %}
+
+              {% if entry.auth_method|default('') %}
+                <span class="tl-auth">{{ entry.auth_method }}</span>
+              {% endif %}
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="empty-state glass-card">
+        <div class="empty-state-icon">📭</div>
+        <p>No attendance records yet</p>
+      </div>
+    {% endif %}
+  </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+  /* ===== Stagger Fade-In for KPI Cards ===== */
+  var kpiCards = document.querySelectorAll('.kpi-card');
+  kpiCards.forEach(function (card, i) {
+    card.style.animationDelay = (0.15 + i * 0.1) + 's';
+  });
+})();
+</script>
+{% endblock %}

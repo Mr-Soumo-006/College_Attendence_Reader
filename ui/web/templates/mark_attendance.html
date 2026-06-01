@@ -1,0 +1,540 @@
+{% extends 'base.html' %}
+
+{% block title %}Mark Attendance — Smart Campus{% endblock %}
+
+{% block extra_css %}
+<style>
+  .mark-container {
+    max-width: 500px;
+    margin: 0 auto;
+    padding: 2.5rem 1rem;
+  }
+
+  .mark-card {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 24px;
+    padding: 2.5rem 2rem;
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    text-align: center;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+    position: relative;
+    overflow: hidden;
+    animation: fadeInUp 0.6s ease;
+  }
+
+  .mark-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, transparent, #7c3aed, #06b6d4, transparent);
+    opacity: 0.8;
+  }
+
+  .avatar-ring {
+    width: 96px;
+    height: 96px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, rgba(124, 58, 237, 0.25) 0%, rgba(6, 182, 212, 0.15) 100%);
+    border: 1px solid rgba(124, 58, 237, 0.35);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1.5rem;
+    font-size: 2.75rem;
+    box-shadow: 0 10px 25px rgba(124, 58, 237, 0.15);
+    position: relative;
+  }
+
+  .student-name {
+    font-family: 'Outfit', sans-serif;
+    font-size: 1.6rem;
+    font-weight: 700;
+    background: linear-gradient(135deg, #ffffff 0%, #c4b5fd 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin: 0 0 0.25rem 0;
+  }
+
+  .student-meta {
+    display: flex;
+    justify-content: center;
+    gap: 0.5rem;
+    margin-bottom: 2rem;
+  }
+
+  .meta-badge {
+    padding: 0.25rem 0.75rem;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    background: rgba(255, 255, 255, 0.05);
+    color: rgba(255, 255, 255, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  .meta-badge.id {
+    background: rgba(124, 58, 237, 0.1);
+    color: #c4b5fd;
+    border-color: rgba(124, 58, 237, 0.2);
+  }
+
+  /* ===== GPS status area ===== */
+  .gps-status-box {
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 16px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+    transition: all 0.4s ease;
+  }
+
+  .gps-spinner {
+    width: 48px;
+    height: 48px;
+    border: 3px solid rgba(124, 58, 237, 0.15);
+    border-top: 3px solid #7c3aed;
+    border-radius: 50%;
+    margin: 0 auto 1rem;
+    animation: spin 1s linear infinite;
+  }
+
+  .gps-icon {
+    font-size: 2.25rem;
+    margin-bottom: 0.75rem;
+    display: inline-block;
+  }
+
+  .gps-title {
+    font-family: 'Outfit', sans-serif;
+    font-size: 1.05rem;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.9);
+    margin: 0 0 0.35rem 0;
+  }
+
+  .gps-desc {
+    font-size: 0.85rem;
+    color: rgba(255, 255, 255, 0.45);
+    margin: 0;
+    line-height: 1.4;
+  }
+
+  /* Status overrides */
+  .gps-loading { color: #a855f7; }
+  
+  .gps-success {
+    border-color: rgba(16, 185, 129, 0.25);
+    background: rgba(16, 185, 129, 0.04);
+  }
+  .gps-success .gps-title { color: #34d399; }
+  .gps-success .gps-icon { color: #34d399; animation: pulse 2s infinite; }
+
+  .gps-error {
+    border-color: rgba(244, 63, 94, 0.25);
+    background: rgba(244, 63, 94, 0.04);
+  }
+  .gps-error .gps-title { color: #f87171; }
+  .gps-error .gps-icon { color: #f87171; }
+
+  /* Mark Button */
+  .btn-mark {
+    width: 100%;
+    padding: 1.1rem;
+    border-radius: 14px;
+    border: none;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 1rem;
+    font-weight: 700;
+    color: white;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    letter-spacing: 0.03em;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .btn-mark.ready {
+    background: linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%);
+    box-shadow: 0 8px 30px rgba(124, 58, 237, 0.35);
+  }
+
+  .btn-mark.ready:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 35px rgba(124, 58, 237, 0.5);
+  }
+
+  .btn-mark.disabled {
+    background: rgba(255, 255, 255, 0.05);
+    color: rgba(255, 255, 255, 0.25);
+    cursor: not-allowed;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+  }
+
+  .btn-mark.loading {
+    background: rgba(124, 58, 237, 0.5);
+    cursor: wait;
+  }
+
+  /* Success Overlays */
+  .success-overlay {
+    position: absolute;
+    inset: 0;
+    background: #0d0c15;
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.5s ease;
+  }
+
+  .success-overlay.active {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .success-icon-wrap {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: rgba(16, 185, 129, 0.15);
+    border: 2px solid #10b981;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2.5rem;
+    color: #10b981;
+    margin-bottom: 1.5rem;
+    transform: scale(0.5);
+    transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  }
+
+  .success-overlay.active .success-icon-wrap {
+    transform: scale(1);
+  }
+
+  .success-title {
+    font-family: 'Outfit', sans-serif;
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: #34d399;
+    margin: 0 0 0.5rem 0;
+  }
+
+  .success-msg {
+    font-size: 0.95rem;
+    color: rgba(255, 255, 255, 0.6);
+    margin: 0 0 2rem 0;
+    line-height: 1.5;
+  }
+
+  .btn-back {
+    padding: 0.75rem 1.5rem;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.05);
+    color: white;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 0.88rem;
+    font-weight: 600;
+    text-decoration: none;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    transition: all 0.2s ease;
+  }
+
+  .btn-back:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.2);
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+
+  @keyframes pulse {
+    0% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.1); opacity: 0.8; }
+    100% { transform: scale(1); opacity: 1; }
+  }
+
+  @keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="mark-container">
+  <div class="mark-card" id="markCard">
+    
+    <!-- Success Overlay -->
+    <div class="success-overlay" id="successOverlay">
+      <div class="success-icon-wrap">
+        <span>✓</span>
+      </div>
+      <h2 class="success-title">Marked! ✅</h2>
+      <p class="success-msg" id="successDetails">Your attendance has been recorded successfully for today.</p>
+      <a href="{{ url_for('student_dashboard') }}" class="btn-back">Go to Dashboard</a>
+    </div>
+
+    <!-- Student Avatar -->
+    <div class="avatar-ring">
+      <span>👨‍🎓</span>
+    </div>
+
+    <h1 class="student-name">{{ student.name }}</h1>
+    
+    <div class="student-meta">
+      <span class="meta-badge id">ID: {{ student.student_id }}</span>
+      <span class="meta-badge">Class: {{ student.class }}</span>
+    </div>
+
+    <!-- Already Marked State -->
+    {% if today_record %}
+      <div class="gps-status-box gps-success">
+        <div class="gps-icon">✅</div>
+        <h3 class="gps-title">Attendance Marked Today</h3>
+        <p class="gps-desc">You have already marked your attendance today.<br>
+          <span style="color: rgba(255, 255, 255, 0.45); font-size: 0.8rem; margin-top: 4px; display: inline-block;">
+            Time In: {{ today_record.time_in }} | Status: {{ today_record.status }}
+          </span>
+        </p>
+      </div>
+      <a href="{{ url_for('student_dashboard') }}" class="btn-back" style="display: block; width: fit-content; margin: 0 auto;">Back to Dashboard</a>
+    
+    {% else %}
+      
+      <!-- GPS Validation Status -->
+      <div class="gps-status-box gps-loading" id="gpsStatusBox">
+        <div class="gps-spinner" id="gpsSpinner"></div>
+        <div class="gps-icon" id="gpsIcon" style="display: none;">📍</div>
+        <h3 class="gps-title" id="gpsTitle">Initializing GPS...</h3>
+        <p class="gps-desc" id="gpsDesc">Please grant location permission when prompted by your browser.</p>
+      </div>
+
+      <!-- Mark Button -->
+      <button class="btn-mark disabled" id="markBtn" type="button" disabled>
+        <span>📍</span> Mark Attendance
+      </button>
+
+    {% endif %}
+
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{% if not today_record %}
+<script>
+(function() {
+  const statusBox = document.getElementById('gpsStatusBox');
+  const spinner = document.getElementById('gpsSpinner');
+  const icon = document.getElementById('gpsIcon');
+  const title = document.getElementById('gpsTitle');
+  const desc = document.getElementById('gpsDesc');
+  const markBtn = document.getElementById('markBtn');
+  const successOverlay = document.getElementById('successOverlay');
+  const successDetails = document.getElementById('successDetails');
+
+  // Coordinates from backend settings
+  const COLLEGE_LAT = {{ college_lat|default(22.448376236684407) }};
+  const COLLEGE_LNG = {{ college_lng|default(88.4143063288526) }};
+  const GEOFENCE_RADIUS = {{ geofence_radius|default(500) }};
+
+  let userCoords = null;
+
+  // Haversine formula on client-side for immediate visual verification
+  function haversineDistance(lat1, lon1, lat2, lon2) {
+    const R = 6371000; // Earth radius in meters
+    const phi1 = lat1 * Math.PI / 180;
+    const phi2 = lat2 * Math.PI / 180;
+    const deltaPhi = (lat2 - lat1) * Math.PI / 180;
+    const deltaLambda = (lon2 - lon1) * Math.PI / 180;
+
+    const a = Math.sin(deltaPhi / 2) * Math.sin(deltaPhi / 2) +
+              Math.cos(phi1) * Math.cos(phi2) *
+              Math.sin(deltaLambda / 2) * Math.sin(deltaLambda / 2);
+    
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  }
+
+  function initLocationCheck() {
+    if (!navigator.geolocation) {
+      showError("Not Supported", "Your browser or device does not support GPS location checking.");
+      return;
+    }
+
+    title.textContent = "Requesting Location...";
+    desc.textContent = "Please allow location access to check if you are within campus boundaries.";
+
+    const options = {
+      enableHighAccuracy: true,
+      timeout: 10000,
+      maximumAge: 0
+    };
+
+    navigator.geolocation.getCurrentPosition(onLocationSuccess, onLocationError, options);
+  }
+
+  function onLocationSuccess(position) {
+    const lat = position.coords.latitude;
+    const lng = position.coords.longitude;
+    userCoords = { lat, lng };
+
+    const distance = haversineDistance(lat, lng, COLLEGE_LAT, COLLEGE_LNG);
+    
+    if (distance <= GEOFENCE_RADIUS) {
+      showSuccess(distance);
+    } else {
+      showDistanceWarning(distance);
+    }
+  }
+
+  function onLocationError(err) {
+    console.error("GPS Error:", err);
+    let msg = "Could not fetch your coordinates. Please make sure location services are enabled.";
+    if (err.code === 1) {
+      msg = "Location permission was denied. Please reset website permissions and allow GPS.";
+    } else if (err.code === 2) {
+      msg = "Position unavailable. Please try moving to an open area.";
+    } else if (err.code === 3) {
+      msg = "GPS request timed out. Please refresh the page to try again.";
+    }
+    showError("GPS Check Failed", msg);
+  }
+
+  function showSuccess(distance) {
+    statusBox.className = "gps-status-box gps-success";
+    spinner.style.display = "none";
+    icon.style.display = "inline-block";
+    icon.textContent = "📍";
+    title.textContent = "Location Verified";
+    desc.textContent = `You are within campus limits (${Math.round(distance)}m from campus center). Ready to check-in!`;
+    
+    markBtn.className = "btn-mark ready";
+    markBtn.disabled = false;
+  }
+
+  function showDistanceWarning(distance) {
+    statusBox.className = "gps-status-box gps-error";
+    spinner.style.display = "none";
+    icon.style.display = "inline-block";
+    icon.textContent = "🚷";
+    title.textContent = "Outside Campus Limits";
+    desc.textContent = `You are too far from the campus (${Math.round(distance)}m). You must be within ${GEOFENCE_RADIUS}m of college to mark attendance.`;
+    
+    markBtn.className = "btn-mark disabled";
+    markBtn.disabled = true;
+  }
+
+  function showError(headline, message) {
+    statusBox.className = "gps-status-box gps-error";
+    spinner.style.display = "none";
+    icon.style.display = "inline-block";
+    icon.textContent = "🚨";
+    title.textContent = headline;
+    desc.textContent = message;
+    
+    markBtn.className = "btn-mark disabled";
+    markBtn.disabled = true;
+  }
+
+  // Handle Mark Attendance Button Click
+  markBtn.addEventListener('click', function() {
+    if (!userCoords) return;
+
+    markBtn.disabled = true;
+    markBtn.className = "btn-mark loading";
+    markBtn.innerHTML = `<span>⏳</span> Marking attendance...`;
+
+    // POST coordinates to server
+    fetch("{{ url_for('mark_attendance_post') }}", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(userCoords)
+    })
+    .then(response => response.json().then(data => ({ status: response.status, body: data })))
+    .then(res => {
+      if (res.status === 200 || res.body.status === "success") {
+        const timeIn = res.body.record ? res.body.record.time_in : "Now";
+        const status = res.body.record ? res.body.record.status : "ON TIME";
+        successDetails.innerHTML = `Your attendance has been recorded successfully.<br><strong>Time In:</strong> ${timeIn}<br><strong>Status:</strong> ${status}`;
+        successOverlay.classList.add('active');
+        
+        // Dynamic confetti effect
+        try {
+          createConfetti();
+        } catch(e) {}
+      } else {
+        // Show error from backend geofence check
+        showError("Authentication Failed", res.body.message || "An error occurred while marking your attendance.");
+        markBtn.className = "btn-mark ready";
+        markBtn.disabled = false;
+        markBtn.innerHTML = `<span>📍</span> Mark Attendance`;
+      }
+    })
+    .catch(err => {
+      console.error(err);
+      showError("Connection Error", "Could not reach the server. Please check your network and try again.");
+      markBtn.className = "btn-mark ready";
+      markBtn.disabled = false;
+      markBtn.innerHTML = `<span>📍</span> Mark Attendance`;
+    });
+  });
+
+  // Fun confetti helper to wow the user!
+  function createConfetti() {
+    const card = document.getElementById('markCard');
+    const colors = ['#7c3aed', '#a855f7', '#06b6d4', '#10b981', '#f59e0b'];
+    for (let i = 0; i < 40; i++) {
+      const conf = document.createElement('div');
+      conf.style.position = 'absolute';
+      conf.style.width = Math.random() * 8 + 5 + 'px';
+      conf.style.height = Math.random() * 15 + 5 + 'px';
+      conf.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+      conf.style.left = Math.random() * 100 + '%';
+      conf.style.top = '-10px';
+      conf.style.borderRadius = '2px';
+      conf.style.transform = `rotate(${Math.random() * 360}deg)`;
+      conf.style.zIndex = '11';
+      card.appendChild(conf);
+
+      const speed = Math.random() * 2 + 1.5;
+      let top = -10;
+      let left = parseFloat(conf.style.left);
+      let angle = 0;
+      
+      const anim = setInterval(() => {
+        top += speed;
+        angle += 2;
+        conf.style.top = top + 'px';
+        conf.style.transform = `rotate(${angle}deg)`;
+        if (top > card.offsetHeight) {
+          clearInterval(anim);
+          conf.remove();
+        }
+      }, 16);
+    }
+  }
+
+  // Start Location Request immediately
+  initLocationCheck();
+
+})();
+</script>
+{% endif %}
+{% endblock %}

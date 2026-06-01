@@ -1,0 +1,23 @@
+# Virtual Environment
+venv/
+.venv/
+env/
+ENV/
+
+# Environment Configuration
+.env
+
+# Python caching
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Local Data and Logs
+logs/
+data/student_faces/*
+data/qr_codes/*
+
+# IDE settings
+.vscode/
+.idea/
