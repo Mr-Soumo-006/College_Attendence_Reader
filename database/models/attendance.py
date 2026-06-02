@@ -93,3 +93,39 @@ def get_all_attendance_for_analytics() -> list[dict]:
                ORDER BY a.student_id, a.date"""
         )
         return cur.fetchall()
+
+
+def mark_attendance_manual(student_id: str, date_str: str, status: str, session_id: int = None) -> None:
+    """Insert or update a student's attendance record for a specific custom date."""
+    status = status.upper().strip()
+    assert status in ("ON TIME", "PRESENT", "LATE", "ABSENT")
+    
+    with DBConnection() as (conn, cur):
+        # Delete any existing record for this student on this specific date/session
+        if session_id:
+            cur.execute(
+                "DELETE FROM attendance WHERE student_id=%s AND session_id=%s",
+                (student_id, session_id)
+            )
+        else:
+            cur.execute(
+                "DELETE FROM attendance WHERE student_id=%s AND date=%s",
+                (student_id, date_str)
+            )
+        
+        # Insert new record
+        cur.execute(
+            """INSERT INTO attendance 
+               (student_id, date, time_in, status, minutes_late, ip_address, auth_method, session_id)
+               VALUES (%s, %s, CURRENT_TIMESTAMP, %s, 0, '127.0.0.1', 'MANUAL', %s)""",
+            (student_id.strip().upper(), date_str, status, session_id)
+        )
+
+
+def delete_attendance_record(student_id: str, date_str: str) -> None:
+    """Remove a student's attendance record for a specific date."""
+    with DBConnection() as (conn, cur):
+        cur.execute(
+            "DELETE FROM attendance WHERE student_id=%s AND date=%s",
+            (student_id.strip().upper(), date_str)
+        )

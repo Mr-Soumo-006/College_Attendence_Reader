@@ -33,7 +33,7 @@ from database.models.student import (
 )
 from database.models.attendance import (
     get_history, get_all_today, get_today_record, mark_attendance,
-    get_session_record,
+    get_session_record, mark_attendance_manual, delete_attendance_record,
 )
 from analytics.metrics_engine import (
     compute_all_stats, get_student_summary, refresh_behavior_stats,
@@ -665,6 +665,51 @@ def create_app():
         except Exception as e:
             flash(f"Error resetting student device: {e}", "error")
         return redirect(url_for("teacher_dashboard"))
+
+    @app.route("/teacher/manual-mark", methods=["POST"])
+    @login_required("teacher")
+    def manual_mark_route():
+        """Manually add or update a student's check-in status for a specific date."""
+        try:
+            student_id = request.form.get("student_id")
+            date_str = request.form.get("date")
+            status = request.form.get("status")
+            
+            if not student_id or not date_str or not status:
+                flash("All fields are required for manual check-in.", "error")
+                return redirect(url_for("teacher_dashboard", tab="monthly-matrix"))
+            
+            mark_attendance_manual(student_id=student_id, date_str=date_str, status=status)
+            try:
+                refresh_behavior_stats()
+            except Exception:
+                pass
+            flash(f"Manual attendance record for student '{student_id}' on {date_str} saved as {status}!", "success")
+        except Exception as e:
+            flash(f"Error marking manual attendance: {e}", "error")
+        return redirect(url_for("teacher_dashboard", tab="monthly-matrix"))
+
+    @app.route("/teacher/delete-attendance", methods=["POST"])
+    @login_required("teacher")
+    def delete_attendance_route():
+        """Remove a student's check-in status for a specific date."""
+        try:
+            student_id = request.form.get("student_id")
+            date_str = request.form.get("date")
+            
+            if not student_id or not date_str:
+                flash("All fields are required to delete a check-in.", "error")
+                return redirect(url_for("teacher_dashboard", tab="monthly-matrix"))
+            
+            delete_attendance_record(student_id=student_id, date_str=date_str)
+            try:
+                refresh_behavior_stats()
+            except Exception:
+                pass
+            flash(f"Attendance record for student '{student_id}' on {date_str} has been successfully deleted.", "success")
+        except Exception as e:
+            flash(f"Error deleting attendance: {e}", "error")
+        return redirect(url_for("teacher_dashboard", tab="monthly-matrix"))
 
     @app.route("/teacher/delete-teacher/<teacher_id>", methods=["POST"])
     @login_required("teacher")
