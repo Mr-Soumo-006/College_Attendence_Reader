@@ -48,8 +48,10 @@ CREATE TABLE IF NOT EXISTS attendance (
     device_id     VARCHAR(100),
     ip_address    VARCHAR(45),
     auth_method   ENUM('QR','QR+FACE','MANUAL','GPS') DEFAULT 'QR+FACE',
+    session_id    INT          DEFAULT NULL,
     FOREIGN KEY (student_id) REFERENCES students(student_id) ON DELETE CASCADE,
-    UNIQUE KEY uq_student_date (student_id, date)
+    FOREIGN KEY (session_id) REFERENCES attendance_sessions(id) ON DELETE CASCADE,
+    UNIQUE KEY uq_student_session (student_id, session_id)
 );
 
 -- ── Behavior Analytics Cache ────────────────────────────────

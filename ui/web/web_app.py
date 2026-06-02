@@ -33,6 +33,7 @@ from database.models.student import (
 )
 from database.models.attendance import (
     get_history, get_all_today, get_today_record, mark_attendance,
+    get_session_record,
 )
 from analytics.metrics_engine import (
     compute_all_stats, get_student_summary, refresh_behavior_stats,
@@ -219,8 +220,10 @@ def create_app():
             flash("Student not found. Please log in again.", "error")
             return redirect(url_for("login"))
 
-        today_record = get_today_record(student_id)
         active_session = get_active_session()
+        today_record = None
+        if active_session:
+            today_record = get_session_record(student_id, active_session["id"])
         return render_template(
             "mark_attendance.html",
             student=student,
@@ -305,11 +308,12 @@ def create_app():
 
         # Check if already marked today
         try:
-            today_record = get_today_record(student_id)
+            # Check if already marked for this active session
+            today_record = get_session_record(student_id, active_session["id"])
             if today_record:
                 return jsonify({
                     "status": "success",
-                    "message": "Attendance already marked today.",
+                    "message": "Attendance already marked for this session.",
                     "already_marked": True,
                     "record": {
                         "date": today_record["date"],
@@ -338,7 +342,8 @@ def create_app():
                 minutes_late=mins_late,
                 ip_address=client_ip,
                 auth_method="GPS",
-                device_id=device_id
+                device_id=device_id,
+                session_id=active_session["id"]
             )
 
             # Trigger analytics refresh

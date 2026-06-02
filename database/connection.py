@@ -201,6 +201,38 @@ def init_db() -> None:
         except mysql.connector.Error:
             pass
 
+        # Ensure attendance table has session_id column
+        try:
+            cur.execute("USE smart_campus")
+            cur.execute("ALTER TABLE attendance ADD COLUMN session_id INT DEFAULT NULL")
+            raw_conn.commit()
+        except mysql.connector.Error:
+            pass
+
+        # Add foreign key linking attendance.session_id to attendance_sessions.id
+        try:
+            cur.execute("USE smart_campus")
+            cur.execute("ALTER TABLE attendance ADD CONSTRAINT fk_attendance_session FOREIGN KEY (session_id) REFERENCES attendance_sessions(id) ON DELETE CASCADE")
+            raw_conn.commit()
+        except mysql.connector.Error:
+            pass
+
+        # Drop legacy unique daily constraint
+        try:
+            cur.execute("USE smart_campus")
+            cur.execute("ALTER TABLE attendance DROP INDEX uq_student_date")
+            raw_conn.commit()
+        except mysql.connector.Error:
+            pass
+
+        # Add unique session constraint to allow multiple check-ins per day for different subjects
+        try:
+            cur.execute("USE smart_campus")
+            cur.execute("ALTER TABLE attendance ADD UNIQUE KEY uq_student_session (student_id, session_id)")
+            raw_conn.commit()
+        except mysql.connector.Error:
+            pass
+
         cur.close()
         raw_conn.close()
     except mysql.connector.Error as exc:
