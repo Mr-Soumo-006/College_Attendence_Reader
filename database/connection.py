@@ -233,6 +233,14 @@ def init_db() -> None:
         except mysql.connector.Error:
             pass
 
+        # Ensure attendance_sessions table has late_threshold column
+        try:
+            cur.execute("USE smart_campus")
+            cur.execute("ALTER TABLE attendance_sessions ADD COLUMN late_threshold INT DEFAULT 10")
+            raw_conn.commit()
+        except mysql.connector.Error:
+            pass
+
         cur.close()
         raw_conn.close()
     except mysql.connector.Error as exc:

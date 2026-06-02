@@ -109,6 +109,7 @@ CREATE TABLE IF NOT EXISTS attendance_sessions (
     start_time   DATETIME     NOT NULL,
     end_time     DATETIME     NOT NULL,
     is_active    TINYINT(1)   DEFAULT 1,
+    late_threshold INT        DEFAULT 10,
     created_at   DATETIME     DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (teacher_id) REFERENCES teachers(teacher_id) ON DELETE CASCADE
 );

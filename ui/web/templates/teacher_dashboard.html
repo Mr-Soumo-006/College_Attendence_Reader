@@ -839,6 +839,14 @@
             <option value="60">60 Minutes</option>
             <option value="120">2 Hours</option>
           </select>
+          <select name="late_threshold" class="form-input" style="width: 145px; padding: 8px 12px; font-size: 0.8rem; background: rgba(0,0,0,0.25); cursor: pointer;" required>
+            <option value="5">Late after 5m</option>
+            <option value="10" selected>Late after 10m</option>
+            <option value="15">Late after 15m</option>
+            <option value="20">Late after 20m</option>
+            <option value="30">Late after 30m</option>
+            <option value="0">Never Mark Late</option>
+          </select>
           <button type="submit" style="background: linear-gradient(135deg, #7c3aed, #a855f7); border: none; color: #fff; padding: 8px 18px; border-radius: 8px; font-size: 0.8rem; font-weight: 700; cursor: pointer; transition: all 0.2s ease; box-shadow: 0 4px 15px rgba(124,58,237,0.25);" onmouseover="this.style.transform='translateY(-1px)'" onmouseout="this.style.transform='translateY(0)'">
             ⚡ Start Timed Check-In
           </button>

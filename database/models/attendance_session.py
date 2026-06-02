@@ -7,7 +7,7 @@ from database.connection import DBConnection
 from utils.time_utils import now as get_now
 
 
-def create_session(session_name: str, teacher_id: str, duration_minutes: int) -> dict:
+def create_session(session_name: str, teacher_id: str, duration_minutes: int, late_threshold: int = 10) -> dict:
     """Insert a new session starting now and ending after the given duration."""
     start_time = get_now().replace(tzinfo=None)
     end_time = start_time + timedelta(minutes=duration_minutes)
@@ -17,9 +17,9 @@ def create_session(session_name: str, teacher_id: str, duration_minutes: int) ->
     
     with DBConnection() as (conn, cur):
         cur.execute(
-            """INSERT INTO attendance_sessions (session_name, teacher_id, start_time, end_time, is_active)
-               VALUES (%s, %s, %s, %s, 1)""",
-            (session_name.strip(), teacher_id.strip().upper(), start_time, end_time),
+            """INSERT INTO attendance_sessions (session_name, teacher_id, start_time, end_time, is_active, late_threshold)
+               VALUES (%s, %s, %s, %s, 1, %s)""",
+            (session_name.strip(), teacher_id.strip().upper(), start_time, end_time, late_threshold),
         )
     return get_active_session()
 
@@ -29,7 +29,7 @@ def get_active_session() -> dict | None:
     now = get_now().replace(tzinfo=None)
     with DBConnection() as (conn, cur):
         cur.execute(
-            """SELECT id, session_name, teacher_id, start_time, end_time, is_active 
+            """SELECT id, session_name, teacher_id, start_time, end_time, is_active, late_threshold 
                FROM attendance_sessions 
                WHERE is_active = 1 AND end_time > %s
                ORDER BY created_at DESC LIMIT 1""",

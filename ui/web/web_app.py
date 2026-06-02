@@ -371,10 +371,21 @@ def create_app():
                     }
                 })
 
-            # Determine attendance status and minutes late
-            from utils.time_utils import attendance_status as get_status, minutes_late as get_mins_late
-            status = get_status()
-            mins_late = get_mins_late()
+            # Determine attendance status and minutes late dynamically based on active session
+            from utils.time_utils import now as get_now
+            current_time = get_now().replace(tzinfo=None)
+            session_start = active_session["start_time"]
+            late_threshold = active_session.get("late_threshold", 10)
+            
+            # Minutes elapsed since session started
+            minutes_elapsed = int((current_time - session_start).total_seconds() / 60)
+            
+            if late_threshold > 0 and minutes_elapsed > late_threshold:
+                status = "LATE"
+                mins_late = max(0, minutes_elapsed - late_threshold)
+            else:
+                status = "ON TIME"
+                mins_late = 0
 
             # Client IP
             client_ip = request.headers.get('X-Forwarded-For', request.remote_addr)
@@ -779,6 +790,7 @@ def create_app():
         """Create and start a new active timed attendance session."""
         session_name = request.form.get("session_name", "").strip()
         duration = request.form.get("duration", "").strip()
+        late_threshold = request.form.get("late_threshold", "10").strip()
         teacher_id = session.get("user_id")
 
         if not session_name or not duration:
@@ -787,11 +799,14 @@ def create_app():
 
         try:
             duration = int(duration)
+            late_threshold = int(late_threshold)
             if duration <= 0:
                 raise ValueError("Duration must be a positive integer.")
+            if late_threshold < 0:
+                raise ValueError("Late threshold must be a non-negative integer.")
             
-            create_session(session_name, teacher_id, duration)
-            flash(f"Attendance session '{session_name}' started successfully for {duration} minutes!", "success")
+            create_session(session_name, teacher_id, duration, late_threshold)
+            flash(f"Attendance session '{session_name}' started successfully for {duration} minutes (Late after {late_threshold}m)!", "success")
         except Exception as e:
             flash(f"Error starting session: {e}", "error")
 
