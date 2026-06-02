@@ -732,7 +732,16 @@
     <span class="tab-icon">🤖</span> AI Predictions
   </button>
   <button class="tab-btn" data-tab="alerts" onclick="switchTab('alerts', this)">
-    <span class="tab-icon">🔔</span> Alerts & Actions
+    <span class="tab-icon">🔔</span> Alerts
+  </button>
+  <button class="tab-btn" data-tab="student-registry" onclick="switchTab('student-registry', this)">
+    <span class="tab-icon">👨‍🎓</span> Students
+  </button>
+  <button class="tab-btn" data-tab="faculty-registry" onclick="switchTab('faculty-registry', this)">
+    <span class="tab-icon">👥</span> Faculty
+  </button>
+  <button class="tab-btn" data-tab="academic-ratings" onclick="switchTab('academic-ratings', this)">
+    <span class="tab-icon">🧠</span> Ratings
   </button>
 </div>
 
@@ -741,6 +750,94 @@
      TAB 1 — OVERVIEW
      ══════════════════════════════════════════════════ -->
 <div id="tab-overview" class="tab-panel active">
+
+  <!-- Attendance Session Control Panel -->
+  <div class="glass-card fade-up" style="margin-bottom: 2rem; border-color: rgba(124, 58, 237, 0.25); background: rgba(124, 58, 237, 0.03); padding: 1.5rem 2rem;">
+    {% if active_session %}
+      <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;">
+        <div>
+          <div style="display: inline-flex; align-items: center; gap: 0.5rem; background: rgba(168, 85, 247, 0.15); border: 1px solid rgba(168, 85, 247, 0.3); color: #c084fc; padding: 4px 12px; border-radius: 999px; font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.50rem;">
+            🟢 TIMED SESSION ACTIVE
+          </div>
+          <h3 style="font-family: 'Outfit', sans-serif; font-size: 1.25rem; font-weight: 600; color: #fff; margin: 0;">
+            {{ active_session.session_name }}
+          </h3>
+          <div style="font-size: 0.8rem; color: rgba(255,255,255,0.45); margin-top: 0.25rem;">
+            Started at {{ active_session.start_time.strftime('%H:%M:%S') if active_session.start_time.strftime is defined else active_session.start_time }} &middot; Ends at {{ active_session.end_time.strftime('%H:%M:%S') if active_session.end_time.strftime is defined else active_session.end_time }}
+          </div>
+        </div>
+        
+        <!-- Countdown Timer -->
+        <div style="text-align: right; display: flex; align-items: center; gap: 1.5rem;">
+          <div>
+            <div id="session-countdown" style="font-family: 'Outfit', sans-serif; font-size: 1.5rem; font-weight: 700; color: #fda4af;">
+              --:--
+            </div>
+            <div style="font-size: 0.65rem; color: rgba(255,255,255,0.35); text-transform: uppercase; letter-spacing: 0.05em; margin-top: 2px;">
+              Remaining Time
+            </div>
+          </div>
+          <form method="POST" action="{{ url_for('end_session') }}" style="margin: 0;">
+            <button type="submit" style="background: rgba(244, 63, 94, 0.15); border: 1px solid rgba(244, 63, 94, 0.3); color: #fda4af; padding: 10px 20px; border-radius: 8px; font-size: 0.82rem; font-weight: 700; cursor: pointer; transition: all 0.2s ease;" onmouseover="this.style.background='rgba(244, 63, 94, 0.3)'" onmouseout="this.style.background='rgba(244, 63, 94, 0.15)'">
+              🛑 Close Session
+            </button>
+          </form>
+        </div>
+      </div>
+      
+      <!-- Countdown timer script -->
+      <script>
+        document.addEventListener('DOMContentLoaded', function() {
+          var endTimeStr = "{{ active_session.end_time.isoformat() if active_session.end_time.isoformat is defined else active_session.end_time }}";
+          var endTime = new Date(endTimeStr);
+          var countdownEl = document.getElementById('session-countdown');
+          
+          function updateTimer() {
+            var now = new Date();
+            var diff = endTime - now;
+            if (diff <= 0) {
+              countdownEl.textContent = "Expired";
+              countdownEl.style.color = "var(--accent-rose)";
+              setTimeout(function() { window.location.reload(); }, 2000);
+              return;
+            }
+            var mins = Math.floor(diff / 60000);
+            var secs = Math.floor((diff % 60000) / 1000);
+            countdownEl.textContent = (mins < 10 ? '0' : '') + mins + ':' + (secs < 10 ? '0' : '') + secs;
+          }
+          updateTimer();
+          setInterval(updateTimer, 1000);
+        });
+      </script>
+    {% else %}
+      <form method="POST" action="{{ url_for('start_session') }}" style="margin: 0; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;">
+        <div style="flex: 1; min-width: 250px;">
+          <h3 style="font-family: 'Outfit', sans-serif; font-size: 1.15rem; font-weight: 600; color: #c4b5fd; margin: 0 0 0.50rem 0;">
+            🏫 Start Attendance Session
+          </h3>
+          <p style="font-size: 0.78rem; color: rgba(255,255,255,0.4); margin: 0;">
+            Specify a class/subject name and a duration. Students can only log their GPS presence during this timer.
+          </p>
+        </div>
+        
+        <div style="display: flex; gap: 0.75rem; flex-wrap: wrap; align-items: center;">
+          <input type="text" name="session_name" class="form-input" placeholder="e.g., Computer Architecture" style="width: 240px; padding: 8px 12px; font-size: 0.8rem; background: rgba(0,0,0,0.25);" required>
+          <select name="duration" class="form-input" style="width: 120px; padding: 8px 12px; font-size: 0.8rem; background: rgba(0,0,0,0.25);" required>
+            <option value="5">5 Minutes</option>
+            <option value="10">10 Minutes</option>
+            <option value="15" selected>15 Minutes</option>
+            <option value="30">30 Minutes</option>
+            <option value="45">45 Minutes</option>
+            <option value="60">60 Minutes</option>
+            <option value="120">2 Hours</option>
+          </select>
+          <button type="submit" style="background: linear-gradient(135deg, #7c3aed, #a855f7); border: none; color: #fff; padding: 8px 18px; border-radius: 8px; font-size: 0.8rem; font-weight: 700; cursor: pointer; transition: all 0.2s ease; box-shadow: 0 4px 15px rgba(124,58,237,0.25);" onmouseover="this.style.transform='translateY(-1px)'" onmouseout="this.style.transform='translateY(0)'">
+            ⚡ Start Timed Check-In
+          </button>
+        </div>
+      </form>
+    {% endif %}
+  </div>
 
   <!-- KPI Cards -->
   <div class="kpi-grid">
@@ -848,11 +945,34 @@
 <div id="tab-analytics" class="tab-panel">
 
   <div class="table-wrap fade-up">
-    <div class="table-toolbar">
+    <div class="table-toolbar" style="flex-wrap: wrap; gap: 1rem;">
       <div class="toolbar-title">🧠 Behavior Analytics</div>
-      <div class="search-box">
-        <span class="search-icon">🔍</span>
-        <input type="text" placeholder="Search students…" id="search-analytics" oninput="filterTable('analytics-table', this.value)">
+      <div style="display: flex; gap: 0.75rem; flex-wrap: wrap; margin-left: auto; align-items: center;">
+        <select id="filter-dept" class="form-input" style="width: 140px; padding: 6px 12px; font-size: 0.8rem; background: rgba(0,0,0,0.25);" onchange="applyAnalyticsFilters()">
+          <option value="">All Departments</option>
+        </select>
+        <select id="filter-year" class="form-input" style="width: 120px; padding: 6px 12px; font-size: 0.8rem; background: rgba(0,0,0,0.25);" onchange="applyAnalyticsFilters()">
+          <option value="">All Years</option>
+          <option value="Year 1">1st Year</option>
+          <option value="Year 2">2nd Year</option>
+          <option value="Year 3">3rd Year</option>
+          <option value="Year 4">4th Year</option>
+        </select>
+        <select id="filter-sem" class="form-input" style="width: 130px; padding: 6px 12px; font-size: 0.8rem; background: rgba(0,0,0,0.25);" onchange="applyAnalyticsFilters()">
+          <option value="">All Semesters</option>
+          <option value="Sem 1">Semester 1</option>
+          <option value="Sem 2">Semester 2</option>
+          <option value="Sem 3">Semester 3</option>
+          <option value="Sem 4">Semester 4</option>
+          <option value="Sem 5">Semester 5</option>
+          <option value="Sem 6">Semester 6</option>
+          <option value="Sem 7">Semester 7</option>
+          <option value="Sem 8">Semester 8</option>
+        </select>
+        <div class="search-box" style="margin: 0;">
+          <span class="search-icon">🔍</span>
+          <input type="text" placeholder="Search students…" id="search-analytics" oninput="applyAnalyticsFilters()">
+        </div>
       </div>
     </div>
     <div class="table-responsive">
@@ -875,6 +995,8 @@
         <tbody>
           {% for s in all_stats|default([]) %}
           <tr data-search="{{ s.student_id|default('')|lower }} {{ s.name|default('')|lower }}"
+              data-dept="{{ s.department|default('')|upper }}"
+              data-class="{{ s.class|default('')|lower }}"
               class="{{ 'row-high-risk' if s.risk_level|default('LOW') == 'HIGH' else '' }}">
             <td style="font-family: monospace; color: rgba(255,255,255,0.55);">{{ s.student_id|default('-') }}</td>
             <td style="font-weight: 600; color: rgba(255,255,255,0.9);">{{ s.name|default('-') }}</td>
@@ -965,60 +1087,118 @@
 
 
 <!-- ══════════════════════════════════════════════════
-     TAB 4 — ALERTS & ACTIONS
+     TAB 4 — ALERTS
      ══════════════════════════════════════════════════ -->
 <div id="tab-alerts" class="tab-panel">
+  <div class="section-title fade-up">
+    <span class="title-icon">🔔</span> Active Alerts
+  </div>
+  <div class="alerts-panel" style="max-width: 800px; margin: 0 auto;">
+    {% if alerts|default([])|length > 0 %}
+      {% for a in alerts|default([]) %}
+      <div class="alert-card fade-up" style="animation-delay: {{ (loop.index * 0.07)|round(2) }}s;">
+        <div class="alert-icon">
+          {% if a.severity|default('INFO') == 'CRITICAL' %}🚨
+          {% elif a.severity|default('INFO') == 'WARNING' %}⚠️
+          {% else %}ℹ️{% endif %}
+        </div>
+        <div class="alert-body">
+          <div class="alert-top">
+            <span class="alert-student">{{ a.name|default('Unknown') }}</span>
+            <span class="badge {{ a.severity|default('INFO')|severity_color }}" style="font-size: 0.68rem;">
+              {{ a.alert_type|default('ALERT') }}
+            </span>
+            <span class="badge {{ a.severity|default('INFO')|severity_color }}" style="font-size: 0.65rem;">
+              {{ a.severity|default('INFO') }}
+            </span>
+          </div>
+          <div class="alert-msg">{{ a.message|default('No details.') }}</div>
+          <div class="alert-time">
+            <span style="margin-right:4px;">🕐</span>
+            {{ a.triggered_at|default('Unknown time') }}
+            <span style="margin-left: 10px; color: rgba(255,255,255,0.25);">ID: {{ a.student_id|default('-') }}</span>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    {% else %}
+      <div class="table-wrap">
+        <div class="all-clear">
+          <div class="check-icon">✅</div>
+          <div style="font-size: 1.05rem; font-weight: 600; color: rgba(255,255,255,0.65); margin-bottom: 6px;">All Clear!</div>
+          <div>No unread alerts at this time.</div>
+        </div>
+      </div>
+    {% endif %}
+  </div>
+</div>
 
+
+<!-- ══════════════════════════════════════════════════
+     TAB 5 — STUDENT REGISTRY
+     ══════════════════════════════════════════════════ -->
+<div id="tab-student-registry" class="tab-panel">
   <div class="split-layout">
-    <!-- Alerts Panel -->
+    <!-- Student Registry List -->
     <div>
       <div class="section-title fade-up">
-        <span class="title-icon">🔔</span> Active Alerts
+        <span class="title-icon">👨‍🎓</span> Student Registry
       </div>
-      <div class="alerts-panel">
-        {% if alerts|default([])|length > 0 %}
-          {% for a in alerts|default([]) %}
-          <div class="alert-card fade-up" style="animation-delay: {{ (loop.index * 0.07)|round(2) }}s;">
-            <div class="alert-icon">
-              {% if a.severity|default('INFO') == 'CRITICAL' %}🚨
-              {% elif a.severity|default('INFO') == 'WARNING' %}⚠️
-              {% else %}ℹ️{% endif %}
-            </div>
-            <div class="alert-body">
-              <div class="alert-top">
-                <span class="alert-student">{{ a.name|default('Unknown') }}</span>
-                <span class="badge {{ a.severity|default('INFO')|severity_color }}" style="font-size: 0.68rem;">
-                  {{ a.alert_type|default('ALERT') }}
-                </span>
-                <span class="badge {{ a.severity|default('INFO')|severity_color }}" style="font-size: 0.65rem;">
-                  {{ a.severity|default('INFO') }}
-                </span>
-              </div>
-              <div class="alert-msg">{{ a.message|default('No details.') }}</div>
-              <div class="alert-time">
-                <span style="margin-right:4px;">🕐</span>
-                {{ a.triggered_at|default('Unknown time') }}
-                <span style="margin-left: 10px; color: rgba(255,255,255,0.25);">ID: {{ a.student_id|default('-') }}</span>
-              </div>
-            </div>
+      <div class="table-wrap fade-up" style="margin-top: 0; padding: 1.25rem;">
+        <div class="table-toolbar" style="flex-wrap: wrap; gap: 0.75rem;">
+          <div class="toolbar-title">Registry List</div>
+          <div class="search-box" style="margin-left: auto;">
+            <span class="search-icon">🔍</span>
+            <input type="text" placeholder="Search by name or ID…" id="search-student-registry" oninput="filterTable('student-registry-table', this.value)" style="padding: 6px 12px; font-size: 0.8rem; background: rgba(0,0,0,0.25);">
           </div>
-          {% endfor %}
-        {% else %}
-          <div class="table-wrap">
-            <div class="all-clear">
-              <div class="check-icon">✅</div>
-              <div style="font-size: 1.05rem; font-weight: 600; color: rgba(255,255,255,0.65); margin-bottom: 6px;">All Clear!</div>
-              <div>No unread alerts at this time.</div>
-            </div>
+        </div>
+        <div class="table-responsive">
+          {% if students|default([])|length > 0 %}
+          <table class="glass-table" id="student-registry-table" style="font-size: 0.82rem;">
+            <thead>
+              <tr>
+                <th>Student ID</th>
+                <th>Name</th>
+                <th>Dept</th>
+                <th>Year</th>
+                <th>Sem</th>
+                <th>Email</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for s in students %}
+              <tr data-search="{{ s.student_id|lower }} {{ s.name|lower }} {{ s.department|lower }}">
+                <td style="font-family: monospace; color: rgba(255,255,255,0.55);">{{ s.student_id }}</td>
+                <td style="font-weight: 600; color: rgba(255,255,255,0.95);">{{ s.name }}</td>
+                <td><span class="badge badge-purple" style="font-size: 0.65rem; border-color: rgba(168, 85, 247, 0.35);">{{ s.department }}</span></td>
+                <td>Year {{ s.year }}</td>
+                <td>Sem {{ s.semester }}</td>
+                <td style="font-size: 0.72rem; color: rgba(255,255,255,0.45);">{{ s.email|default('—') }}</td>
+                <td>
+                  <form method="POST" action="{{ url_for('delete_student_route', student_id=s.student_id) }}" style="margin:0;" onsubmit="return confirm('Are you sure you want to delete student {{ s.name }}? This will permanently delete all records!');">
+                    <button type="submit" style="background: rgba(244, 63, 94, 0.12); border: 1px solid rgba(244, 63, 94, 0.25); color: #fda4af; padding: 3px 8px; border-radius: 4px; font-size: 0.68rem; font-weight: 700; cursor: pointer; transition: all 0.2s ease;" onmouseover="this.style.background='rgba(244, 63, 94, 0.25)'" onmouseout="this.style.background='rgba(244, 63, 94, 0.12)'">
+                      🗑&nbsp;Delete
+                    </button>
+                  </form>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+          {% else %}
+          <div style="text-align: center; color: rgba(255,255,255,0.35); font-size: 0.85rem; padding: 1.5rem;">
+            No students registered yet.
           </div>
-        {% endif %}
+          {% endif %}
+        </div>
       </div>
     </div>
 
     <!-- Add Student Form -->
     <div>
       <div class="section-title fade-up">
-        <span class="title-icon">➕</span> Quick Actions
+        <span class="title-icon">➕</span> Register Student
       </div>
       <div class="form-card fade-up" style="animation-delay: 0.15s;">
         <div class="form-title">Register New Student</div>
@@ -1034,8 +1214,26 @@
             <input type="text" name="name" class="form-input" placeholder="Enter student's full name" required>
           </div>
           <div class="form-group">
-            <label>Class / Section <span class="req">*</span></label>
-            <input type="text" name="class_" class="form-input" placeholder="e.g., BCA-3A" required>
+            <label>Department <span class="req">*</span></label>
+            <input type="text" name="department" class="form-input" placeholder="e.g., BCA" required>
+          </div>
+          <div class="form-group" style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+            <div>
+              <label>Academic Year <span class="req">*</span></label>
+              <select name="year" id="student_year" class="form-input" style="background: rgba(25, 23, 38, 0.85); color: #e0e0e0; border: 1px solid rgba(255,255,255,0.08); padding: 10px 14px;" required>
+                <option value="" disabled selected>Select Year</option>
+                <option value="1">1st Year</option>
+                <option value="2">2nd Year</option>
+                <option value="3">3rd Year</option>
+                <option value="4">4th Year</option>
+              </select>
+            </div>
+            <div>
+              <label>Semester <span class="req">*</span></label>
+              <select name="semester" id="student_semester" class="form-input" style="background: rgba(25, 23, 38, 0.85); color: #e0e0e0; border: 1px solid rgba(255,255,255,0.08); padding: 10px 14px;" required>
+                <option value="" disabled selected>Select Semester</option>
+              </select>
+            </div>
           </div>
           <div class="form-group">
             <label>Email</label>
@@ -1047,6 +1245,218 @@
           </div>
           <button type="submit" class="btn-submit">
             ➕ Add Student
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════════════════
+     TAB 6 — FACULTY REGISTRY
+     ══════════════════════════════════════════════════ -->
+<div id="tab-faculty-registry" class="tab-panel">
+  <div class="split-layout">
+    <!-- Faculty Registry List -->
+    <div>
+      <div class="section-title fade-up">
+        <span class="title-icon">👥</span> Faculty Registry
+      </div>
+      <div class="table-wrap fade-up" style="margin-top: 0; padding: 1.25rem;">
+        <div class="table-toolbar" style="flex-wrap: wrap; gap: 0.75rem;">
+          <div class="toolbar-title">Faculty List</div>
+          <div class="search-box" style="margin-left: auto;">
+            <span class="search-icon">🔍</span>
+            <input type="text" placeholder="Search by name or ID…" id="search-faculty-registry" oninput="filterTable('faculty-registry-table', this.value)" style="padding: 6px 12px; font-size: 0.8rem; background: rgba(0,0,0,0.25);">
+          </div>
+        </div>
+        <div class="table-responsive">
+          {% if teachers|default([])|length > 0 %}
+          <table class="glass-table" id="faculty-registry-table" style="font-size: 0.82rem;">
+            <thead>
+              <tr>
+                <th>Teacher ID</th>
+                <th>Name</th>
+                <th>Department</th>
+                <th>Email</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for t in teachers %}
+              <tr data-search="{{ t.teacher_id|lower }} {{ t.name|lower }} {{ t.department|lower }}">
+                <td style="font-family: monospace; color: rgba(255,255,255,0.55);">{{ t.teacher_id }}</td>
+                <td style="font-weight: 600; color: rgba(255,255,255,0.95);">{{ t.name }}</td>
+                <td><span class="badge badge-purple" style="font-size: 0.65rem; border-color: rgba(168, 85, 247, 0.35);">{{ t.department }}</span></td>
+                <td style="font-size: 0.72rem; color: rgba(255,255,255,0.45);">{{ t.email }}</td>
+                <td>
+                  {% if t.teacher_id|upper == current_teacher_id|upper %}
+                    <span style="color: rgba(255,255,255,0.35); font-size: 0.72rem; font-weight: 600;">Active Account</span>
+                  {% else %}
+                    <form method="POST" action="{{ url_for('delete_teacher_route', teacher_id=t.teacher_id) }}" style="margin:0;" onsubmit="return confirm('Are you sure you want to delete teacher {{ t.name }}? This will permanently revoke their access!');">
+                      <button type="submit" style="background: rgba(244, 63, 94, 0.12); border: 1px solid rgba(244, 63, 94, 0.25); color: #fda4af; padding: 3px 8px; border-radius: 4px; font-size: 0.68rem; font-weight: 700; cursor: pointer; transition: all 0.2s ease;" onmouseover="this.style.background='rgba(244, 63, 94, 0.25)'" onmouseout="this.style.background='rgba(244, 63, 94, 0.12)'">
+                        🗑&nbsp;Delete
+                      </button>
+                    </form>
+                  {% endif %}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+          {% else %}
+          <div style="text-align: center; color: rgba(255,255,255,0.35); font-size: 0.85rem; padding: 1.5rem;">
+            No teachers registered yet.
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Register New Teacher Form -->
+    <div>
+      <div class="section-title fade-up">
+        <span class="title-icon">➕</span> Register Teacher
+      </div>
+      <div class="form-card fade-up" style="animation-delay: 0.22s;">
+        <div class="form-title">Register New Teacher</div>
+        <div class="form-subtitle">Add a faculty colleague to the system</div>
+
+        <form method="POST" action="{{ url_for('add_teacher') }}">
+          <div class="form-group">
+            <label>Teacher ID <span class="req">*</span></label>
+            <input type="text" name="teacher_id" class="form-input" placeholder="e.g., T102" required>
+          </div>
+          <div class="form-group">
+            <label>Full Name <span class="req">*</span></label>
+            <input type="text" name="name" class="form-input" placeholder="Enter teacher's full name" required>
+          </div>
+          <div class="form-group">
+            <label>Email Address <span class="req">*</span></label>
+            <input type="email" name="email" class="form-input" placeholder="colleague@college.edu" required>
+          </div>
+          <div class="form-group">
+            <label>Department <span class="req">*</span></label>
+            <input type="text" name="department" class="form-input" placeholder="e.g., BCA" required>
+          </div>
+          <div class="form-group">
+            <label>Login Password <span class="req">*</span></label>
+            <input type="password" name="password" class="form-input" placeholder="Set temporary password" required>
+          </div>
+          <button type="submit" class="btn-submit" style="background: linear-gradient(135deg, #a855f7, #7c3aed);">
+            ➕ Register Teacher
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════════════════
+     TAB 7 — ACADEMIC RATINGS
+     ══════════════════════════════════════════════════ -->
+<div id="tab-academic-ratings" class="tab-panel">
+  <div class="split-layout">
+    <!-- Submitted Ratings Table -->
+    <div>
+      <div class="section-title fade-up">
+        <span class="title-icon">🧠</span> Academic Performance Log
+      </div>
+      <div class="table-wrap fade-up" style="margin-top: 0; padding: 1.25rem;">
+        <div class="table-toolbar" style="flex-wrap: wrap; gap: 0.75rem;">
+          <div class="toolbar-title">Subject Ratings</div>
+          <div class="search-box" style="margin-left: auto;">
+            <span class="search-icon">🔍</span>
+            <input type="text" placeholder="Search by student or subject…" id="search-ratings-registry" oninput="filterTable('ratings-registry-table', this.value)" style="padding: 6px 12px; font-size: 0.8rem; background: rgba(0,0,0,0.25);">
+          </div>
+        </div>
+        <div class="table-responsive">
+          {% if all_ratings|default([])|length > 0 %}
+          <table class="glass-table" id="ratings-registry-table" style="font-size: 0.82rem;">
+            <thead>
+              <tr>
+                <th>Student</th>
+                <th>Subject</th>
+                <th>Rating</th>
+                <th>Feedback Comment</th>
+                <th>Submitted By</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for r in all_ratings %}
+              <tr data-search="{{ r.student_id|lower }} {{ r.student_name|lower }} {{ r.subject|lower }}">
+                <td style="font-weight: 600; color: rgba(255,255,255,0.95);">
+                  {{ r.student_name }}
+                  <div style="font-family: monospace; font-size: 0.68rem; color: rgba(255,255,255,0.35); font-weight: normal; margin-top: 2px;">
+                    {{ r.student_id }}
+                  </div>
+                </td>
+                <td style="font-weight: 500; color: #c4b5fd;">{{ r.subject }}</td>
+                <td>
+                  <span style="font-size: 0.78rem; letter-spacing: 1px;">
+                    {% for i in range(r.rating) %}⭐{% endfor %}
+                    {% for i in range(5 - r.rating) %}<span style="opacity: 0.15;">⭐</span>{% endfor %}
+                  </span>
+                </td>
+                <td style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.75rem; color: rgba(255,255,255,0.6);" title="{{ r.comment }}">
+                  {{ r.comment }}
+                </td>
+                <td style="font-size: 0.72rem; color: rgba(255,255,255,0.45);">{{ r.teacher_name }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+          {% else %}
+          <div style="text-align: center; color: rgba(255,255,255,0.35); font-size: 0.85rem; padding: 1.5rem;">
+            No performance ratings submitted yet.
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Submit Student Academic Rating Form -->
+    <div>
+      <div class="section-title fade-up">
+        <span class="title-icon">➕</span> Rate Student
+      </div>
+      <div class="form-card fade-up" style="animation-delay: 0.28s;">
+        <div class="form-title">Submit Academic Rating & Feedback</div>
+        <div class="form-subtitle">Add subject-specific rating and comments for a student</div>
+
+        <form method="POST" action="{{ url_for('submit_rating_route') }}">
+          <div class="form-group">
+            <label>Student <span class="req">*</span></label>
+            <select name="student_id" class="form-input" style="background: rgba(25, 23, 38, 0.85); color: #e0e0e0; border: 1px solid rgba(255,255,255,0.08); padding: 10px 14px;" required>
+              <option value="" disabled selected>Select Student</option>
+              {% for s in students|default([]) %}
+                <option value="{{ s.student_id }}">{{ s.name }} ({{ s.student_id }})</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Subject Name <span class="req">*</span></label>
+            <input type="text" name="subject" class="form-input" placeholder="e.g., Mathematics, Data Structures" required>
+          </div>
+          <div class="form-group">
+            <label>Subject Rating <span class="req">*</span></label>
+            <select name="rating" class="form-input" style="background: rgba(25, 23, 38, 0.85); color: #e0e0e0; border: 1px solid rgba(255,255,255,0.08); padding: 10px 14px;" required>
+              <option value="" disabled selected>Select Rating (1 to 5 Stars)</option>
+              <option value="5">⭐⭐⭐⭐⭐ 5 - Excellent</option>
+              <option value="4">⭐⭐⭐⭐ 4 - Good</option>
+              <option value="3">⭐⭐⭐ 3 - Average</option>
+              <option value="2">⭐⭐ 2 - Needs Improvement</option>
+              <option value="1">⭐ 1 - Critical Attention</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Performance Feedback & Suggestions <span class="req">*</span></label>
+            <textarea name="comment" class="form-input" placeholder="Write feedback comments and what they need to improve..." style="height: 100px; resize: none; background: rgba(25, 23, 38, 0.85); color: #e0e0e0; font-family: inherit; font-size: inherit; padding: 10px 14px; border: 1px solid rgba(255,255,255,0.08);" required></textarea>
+          </div>
+          <button type="submit" class="btn-submit" style="background: linear-gradient(135deg, #06b6d4, #0891b2);">
+            ➕ Submit Performance Rating
           </button>
         </form>
       </div>
@@ -1173,10 +1583,91 @@
   }
 
   /* ═══════════════════════════════════════
+     YEAR-SEMESTER DYNAMIC SELECT
+     ═══════════════════════════════════════ */
+  function setupYearSemesterDropdowns() {
+    var yearSelect = document.getElementById('student_year');
+    var semSelect = document.getElementById('student_semester');
+    if (!yearSelect || !semSelect) return;
+
+    yearSelect.addEventListener('change', function() {
+      var selectedYear = parseInt(yearSelect.value);
+      semSelect.innerHTML = '<option value="" disabled selected>Select Semester</option>';
+      
+      if (!selectedYear) return;
+      
+      // Calculate semesters for this year: Year 1 -> Sem 1, 2; Year 2 -> Sem 3, 4, etc.
+      var startSem = (selectedYear - 1) * 2 + 1;
+      var endSem = startSem + 1;
+      
+      for (var s = startSem; s <= endSem; s++) {
+        var opt = document.createElement('option');
+        opt.value = s;
+        opt.textContent = 'Semester ' + s;
+        semSelect.appendChild(opt);
+      }
+    });
+  }
+
+  /* ═══════════════════════════════════════
+     DYNAMIC DEPARTMENT FILTER POPULATION
+     ═══════════════════════════════════════ */
+  function populateDepartmentFilter() {
+    var table = document.getElementById('analytics-table');
+    var filter = document.getElementById('filter-dept');
+    if (!table || !filter) return;
+    var rows = table.querySelectorAll('tbody tr');
+    var depts = new Set();
+    rows.forEach(function(row) {
+      var dept = row.getAttribute('data-dept');
+      if (dept) depts.add(dept.trim().toUpperCase());
+    });
+    Array.from(depts).sort().forEach(function(d) {
+      var opt = document.createElement('option');
+      opt.value = d;
+      opt.textContent = d;
+      filter.appendChild(opt);
+    });
+  }
+
+  /* ═══════════════════════════════════════
+     DYNAMIC STUDENTS MULTI-FILTERING
+     ═══════════════════════════════════════ */
+  function applyAnalyticsFilters() {
+    var table = document.getElementById('analytics-table');
+    if (!table) return;
+    var rows = table.querySelectorAll('tbody tr');
+    
+    var q = document.getElementById('search-analytics').value.toLowerCase().trim();
+    var dept = document.getElementById('filter-dept').value.toUpperCase();
+    var year = document.getElementById('filter-year').value.toLowerCase();
+    var sem = document.getElementById('filter-sem').value.toLowerCase();
+    
+    rows.forEach(function(row) {
+      var searchData = row.getAttribute('data-search') || '';
+      var rowDept = row.getAttribute('data-dept') || '';
+      var rowClass = row.getAttribute('data-class') || '';
+      
+      var matchesSearch = searchData.indexOf(q) !== -1;
+      var matchesDept = dept === "" || rowDept === dept;
+      var matchesYear = year === "" || rowClass.indexOf(year) !== -1;
+      var matchesSem = sem === "" || rowClass.indexOf(sem) !== -1;
+      
+      if (matchesSearch && matchesDept && matchesYear && matchesSem) {
+        row.style.display = '';
+      } else {
+        row.style.display = 'none';
+      }
+    });
+  }
+
+  /* ═══════════════════════════════════════
      INIT
      ═══════════════════════════════════════ */
   document.addEventListener('DOMContentLoaded', function() {
     staggerFadeIn();
+    setupYearSemesterDropdowns();
+    populateDepartmentFilter();
     // Animate probability bars if predictions tab is already active
     setTimeout(animateProbBars, 600);
   });

@@ -314,9 +314,24 @@
       </div>
       <a href="{{ url_for('student_dashboard') }}" class="btn-back" style="display: block; width: fit-content; margin: 0 auto;">Back to Dashboard</a>
     
+    {% elif not active_session %}
+      <!-- Session Lockout State -->
+      <div class="gps-status-box gps-error" style="border-color: rgba(244, 63, 94, 0.25); background: rgba(244, 63, 94, 0.04); margin-bottom: 2rem;">
+        <div class="gps-icon" style="font-size: 2.5rem;">🔒</div>
+        <h3 class="gps-title" style="color: #f87171;">Check-In Portal Locked</h3>
+        <p class="gps-desc" style="color: rgba(255, 255, 255, 0.55);">
+          No active attendance session is running. Please contact your teacher or wait for them to start the session.
+        </p>
+      </div>
+      <a href="{{ url_for('student_dashboard') }}" class="btn-back" style="display: block; width: fit-content; margin: 0 auto;">Back to Dashboard</a>
+
     {% else %}
       
       <!-- GPS Validation Status -->
+      <div style="margin-bottom: 1.25rem; font-size: 0.78rem; color: #c4b5fd; font-weight: 700; display: inline-flex; align-items: center; gap: 0.4rem; background: rgba(124,58,237,0.12); border: 1px solid rgba(124,58,237,0.25); padding: 5px 14px; border-radius: 999px;">
+        ⚡ SESSION: {{ active_session.session_name }} (Ends: <span id="session-ends">--:--</span>)
+      </div>
+
       <div class="gps-status-box gps-loading" id="gpsStatusBox">
         <div class="gps-spinner" id="gpsSpinner"></div>
         <div class="gps-icon" id="gpsIcon" style="display: none;">📍</div>
@@ -329,6 +344,30 @@
         <span>📍</span> Mark Attendance
       </button>
 
+      <!-- Session Ends Countdown -->
+      <script>
+        document.addEventListener('DOMContentLoaded', function() {
+          var endTimeStr = "{{ active_session.end_time.isoformat() if active_session.end_time.isoformat is defined else active_session.end_time }}";
+          var endTime = new Date(endTimeStr);
+          var timerEl = document.getElementById('session-ends');
+          
+          function updateTimer() {
+            var now = new Date();
+            var diff = endTime - now;
+            if (diff <= 0) {
+              timerEl.textContent = "Expired";
+              window.location.reload();
+              return;
+            }
+            var mins = Math.floor(diff / 60000);
+            var secs = Math.floor((diff % 60000) / 1000);
+            timerEl.textContent = (mins < 10 ? '0' : '') + mins + ':' + (secs < 10 ? '0' : '') + secs;
+          }
+          updateTimer();
+          setInterval(updateTimer, 1000);
+        });
+      </script>
+
     {% endif %}
 
   </div>
@@ -336,7 +375,7 @@
 {% endblock %}
 
 {% block extra_js %}
-{% if not today_record %}
+{% if not today_record and active_session %}
 <script>
 (function() {
   const statusBox = document.getElementById('gpsStatusBox');

@@ -89,6 +89,118 @@ def init_db() -> None:
             raw_conn.commit()
         except mysql.connector.Error:
             pass
+
+        # Ensure existing students table has the department, year, and semester columns
+        try:
+            cur.execute("USE smart_campus")
+            cur.execute("ALTER TABLE students ADD COLUMN department VARCHAR(50) NOT NULL DEFAULT 'BCA'")
+            raw_conn.commit()
+        except mysql.connector.Error:
+            pass
+
+        try:
+            cur.execute("USE smart_campus")
+            cur.execute("ALTER TABLE students ADD COLUMN year INT NOT NULL DEFAULT 1")
+            raw_conn.commit()
+        except mysql.connector.Error:
+            pass
+
+        try:
+            cur.execute("USE smart_campus")
+            cur.execute("ALTER TABLE students ADD COLUMN semester INT NOT NULL DEFAULT 1")
+            raw_conn.commit()
+        except mysql.connector.Error:
+            pass
+
+        # Alter department column to VARCHAR(50) in students and teachers tables
+        try:
+            cur.execute("USE smart_campus")
+            cur.execute("ALTER TABLE students MODIFY COLUMN department VARCHAR(50) NOT NULL")
+            cur.execute("ALTER TABLE teachers MODIFY COLUMN department VARCHAR(50) NOT NULL")
+            raw_conn.commit()
+        except mysql.connector.Error:
+            pass
+
+        # Seed default teacher T101 / admin123 if teachers table is empty
+        try:
+            cur.execute("USE smart_campus")
+            cur.execute("SELECT COUNT(*) FROM teachers")
+            count = cur.fetchone()[0]
+            if count == 0:
+                from werkzeug.security import generate_password_hash
+                hashed_pw = generate_password_hash("admin123")
+                cur.execute(
+                    """INSERT INTO teachers (teacher_id, name, email, department, password)
+                       VALUES (%s, %s, %s, %s, %s)""",
+                    ("T101", "Admin Teacher", "teacher@college.edu", "BCA", hashed_pw)
+                )
+                raw_conn.commit()
+        except mysql.connector.Error:
+            pass
+
+        # Upgrade legacy SHA-256 hashes to secure werkzeug hashes
+        try:
+            cur.execute("USE smart_campus")
+            from werkzeug.security import generate_password_hash
+            # For default teacher T101
+            cur.execute("SELECT password FROM teachers WHERE teacher_id = 'T101'")
+            row = cur.fetchone()
+            if row and row[0] == "240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9":
+                hashed = generate_password_hash("admin123")
+                cur.execute("UPDATE teachers SET password = %s WHERE teacher_id = 'T101'", (hashed,))
+                raw_conn.commit()
+            
+            # For test teacher T102
+            cur.execute("SELECT password FROM teachers WHERE teacher_id = 'T102'")
+            row = cur.fetchone()
+            if row and row[0] == "95d30169a59c418b52013315fc81bc99fdf0a7b03a116f346ab628496f349ed5":
+                hashed = generate_password_hash("secretpassword")
+                cur.execute("UPDATE teachers SET password = %s WHERE teacher_id = 'T102'", (hashed,))
+                raw_conn.commit()
+        except mysql.connector.Error:
+            pass
+
+        # Ensure the attendance_sessions and student_ratings tables are created
+        try:
+            cur.execute("USE smart_campus")
+            cur.execute(
+                """CREATE TABLE IF NOT EXISTS attendance_sessions (
+                    id           INT          AUTO_INCREMENT PRIMARY KEY,
+                    session_name VARCHAR(100) NOT NULL,
+                    teacher_id   VARCHAR(20)  NOT NULL,
+                    start_time   DATETIME     NOT NULL,
+                    end_time     DATETIME     NOT NULL,
+                    is_active    TINYINT(1)   DEFAULT 1,
+                    created_at   DATETIME     DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (teacher_id) REFERENCES teachers(teacher_id) ON DELETE CASCADE
+                )"""
+            )
+            cur.execute(
+                """CREATE TABLE IF NOT EXISTS student_ratings (
+                    id           INT          AUTO_INCREMENT PRIMARY KEY,
+                    student_id   VARCHAR(20)  NOT NULL,
+                    teacher_id   VARCHAR(20)  NOT NULL,
+                    subject      VARCHAR(100) NOT NULL,
+                    rating       INT          NOT NULL,
+                    comment      TEXT,
+                    created_at   DATETIME     DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (student_id) REFERENCES students(student_id) ON DELETE CASCADE,
+                    FOREIGN KEY (teacher_id) REFERENCES teachers(teacher_id) ON DELETE CASCADE,
+                    UNIQUE KEY uq_student_subject (student_id, subject)
+                )"""
+            )
+            raw_conn.commit()
+        except mysql.connector.Error:
+            pass
+
+        # Ensure existing students table has device_id column for proxy protection
+        try:
+            cur.execute("USE smart_campus")
+            cur.execute("ALTER TABLE students ADD COLUMN device_id VARCHAR(100) DEFAULT NULL")
+            raw_conn.commit()
+        except mysql.connector.Error:
+            pass
+
         cur.close()
         raw_conn.close()
     except mysql.connector.Error as exc:

@@ -9,16 +9,18 @@ from database.connection import DBConnection
 from utils.exceptions import StudentNotFoundError
 
 
-def create_student(student_id: str, name: str, class_: str,
+def create_student(student_id: str, name: str, department: str, year: int, semester: int,
                    email: str = "", phone: str = "") -> dict:
     """Insert a new student and return the row dict."""
     seed = uuid.uuid4().hex  # unique per-student QR seed
+    class_ = f"{department.strip().upper()} (Year {year}, Sem {semester})"
     with DBConnection() as (conn, cur):
         cur.execute(
             """INSERT INTO students
-               (student_id, name, class, email, phone, qr_seed)
-               VALUES (%s,%s,%s,%s,%s,%s)""",
-            (student_id, name, class_, email, phone, seed),
+               (student_id, name, class, email, phone, qr_seed, department, year, semester)
+               VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)""",
+            (student_id.strip().upper(), name.strip(), class_, email.strip(),
+             phone.strip(), seed, department.strip().upper(), int(year), int(semester)),
         )
     return get_student(student_id)
 

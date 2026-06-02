@@ -734,6 +734,73 @@
     {% endif %}
   </div>
 
+  {# ============================== 4.5. ACADEMIC PERFORMANCE & SUBJECT RATINGS ============================== #}
+  <div class="dow-section glass-card" style="margin-bottom: 2.5rem; animation: fadeInUp 0.7s ease 0.35s both;">
+    <h2 class="section-title">Academic Subject Performance</h2>
+    
+    {% if ratings %}
+      <p style="font-size: 0.85rem; color: rgba(255,255,255,0.45); margin-bottom: 1.5rem; line-height: 1.4;">
+        Below are subject feedback ratings and improvement suggestions submitted by your teachers.
+      </p>
+      
+      <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+        {% for r in ratings %}
+          <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 14px; padding: 1.25rem; transition: all 0.3s ease;" onmouseover="this.style.borderColor='rgba(255, 255, 255, 0.1)'; this.style.background='rgba(255, 255, 255, 0.04)'" onmouseout="this.style.borderColor='rgba(255, 255, 255, 0.05)'; this.style.background='rgba(255, 255, 255, 0.02)'">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.75rem;">
+              <div>
+                <span style="font-family: 'Outfit', sans-serif; font-size: 1.05rem; font-weight: 600; color: #fff;">{{ r.subject }}</span>
+                <span style="font-size: 0.72rem; color: rgba(255,255,255,0.35); margin-left: 0.5rem;">by {{ r.teacher_name }}</span>
+              </div>
+              
+              <div style="display: flex; align-items: center; gap: 0.75rem;">
+                <!-- Stars display -->
+                <span style="font-size: 0.9rem; letter-spacing: 2px;">
+                  {% for i in range(r.rating) %}⭐{% endfor %}
+                  {% for i in range(5 - r.rating) %}<span style="opacity: 0.15;">⭐</span>{% endfor %}
+                </span>
+                
+                <!-- Recommendation badge -->
+                {% if r.rating < 3 %}
+                  <span class="badge-red" style="font-size: 0.68rem; padding: 2px 8px; border-radius: 6px;">⚠️ Needs Work</span>
+                {% elif r.rating == 3 %}
+                  <span class="badge-amber" style="font-size: 0.68rem; padding: 2px 8px; border-radius: 6px;">⚡ Average</span>
+                {% else %}
+                  <span class="badge-green" style="font-size: 0.68rem; padding: 2px 8px; border-radius: 6px;">✨ Strong</span>
+                {% endif %}
+              </div>
+            </div>
+            
+            <!-- Premium styled rating progress bar -->
+            <div style="height: 8px; width: 100%; background: rgba(255,255,255,0.05); border-radius: 999px; overflow: hidden; margin-bottom: 0.75rem; border: 1px solid rgba(255,255,255,0.03);">
+              {% set pct = r.rating * 20 %}
+              <div style="height: 100%; width: {{ pct }}%; border-radius: 999px; transition: width 1.2s cubic-bezier(0.4, 0, 0.2, 1);
+                {% if r.rating < 3 %}
+                  background: linear-gradient(90deg, #f43f5e, #fda4af); box-shadow: 0 0 10px rgba(244, 63, 94, 0.3);
+                {% elif r.rating == 3 %}
+                  background: linear-gradient(90deg, #f59e0b, #fcd34d); box-shadow: 0 0 10px rgba(245, 158, 11, 0.3);
+                {% else %}
+                  background: linear-gradient(90deg, #10b981, #34d399); box-shadow: 0 0 10px rgba(16, 185, 129, 0.3);
+                {% endif %}
+              "></div>
+            </div>
+            
+            <!-- Feedback Comments -->
+            <div style="font-size: 0.85rem; line-height: 1.45; color: rgba(255,255,255,0.65); background: rgba(0,0,0,0.15); padding: 8px 12px; border-radius: 8px; border-left: 3px solid
+              {% if r.rating < 3 %}#f43f5e{% elif r.rating == 3 %}#f59e0b{% else %}#10b981{% endif %};">
+              <strong style="color: rgba(255,255,255,0.85); font-weight: 600;">Feedback:</strong> {{ r.comment }}
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="empty-state">
+        <div class="empty-state-icon">🔮</div>
+        <p>No academic feedback records yet</p>
+        <span style="font-size: 0.75rem; color: rgba(255,255,255,0.25);">Actionable subject reviews and improvement graphs will appear once teachers submit ratings.</span>
+      </div>
+    {% endif %}
+  </div>
+
   {# ============================== 5. ATTENDANCE HISTORY TIMELINE ============================== #}
   <div class="timeline-section">
     <h2 class="section-title">Recent Attendance History</h2>

@@ -40,6 +40,8 @@ from analytics.report_builder import class_summary_report, student_report_card
 from analytics.pattern_detector import analyze_dow_pattern, trend_analysis
 from ml_module.predictor import predict_all_students
 from database.models.alert import get_unread_alerts
+from database.models.attendance_session import get_active_session, create_session, end_active_session
+from database.models.student_rating import submit_rating, get_student_ratings, get_all_ratings
 from utils.exceptions import StudentNotFoundError, DatabaseError
 from utils.time_utils import now, today_str, time_slot
 from utils.crypto import sign
@@ -118,18 +120,22 @@ def create_app():
                     return render_template("login.html", active_tab="student")
 
             elif role == "teacher":
-                teacher_name = request.form.get("teacher_name", "").strip()
+                teacher_id = request.form.get("teacher_id", "").strip().upper()
                 password = request.form.get("password", "")
-                if not teacher_name or not password:
+                if not teacher_id or not password:
                     flash("Please fill in all fields.", "error")
                     return render_template("login.html", active_tab="teacher")
-                if password != app.config["TEACHER_PASSWORD"]:
-                    flash("Invalid teacher password.", "error")
+                
+                from database.models.teacher import verify_teacher_login
+                teacher = verify_teacher_login(teacher_id, password)
+                if not teacher:
+                    flash("Invalid teacher ID or password.", "error")
                     return render_template("login.html", active_tab="teacher")
+                
                 session["user_role"] = "teacher"
-                session["user_id"] = "TEACHER"
-                session["user_name"] = teacher_name
-                flash(f"Welcome, {teacher_name}!", "success")
+                session["user_id"] = teacher["teacher_id"]
+                session["user_name"] = teacher["name"]
+                flash(f"Welcome, {teacher['name']}!", "success")
                 next_url = request.args.get("next")
                 if next_url and next_url.startswith("/"):
                     return redirect(next_url)
@@ -183,6 +189,12 @@ def create_app():
         except Exception:
             trend = "STABLE"
 
+        # Subject ratings and teacher feedback comments
+        try:
+            ratings = get_student_ratings(student_id)
+        except Exception:
+            ratings = []
+
         return render_template(
             "student_dashboard.html",
             student=student,
@@ -191,6 +203,7 @@ def create_app():
             today_record=today_record,
             dow_pattern=dow_pattern,
             trend=trend,
+            ratings=ratings,
         )
 
     @app.route("/mark-attendance", methods=["GET"])
@@ -206,10 +219,12 @@ def create_app():
             return redirect(url_for("login"))
 
         today_record = get_today_record(student_id)
+        active_session = get_active_session()
         return render_template(
             "mark_attendance.html",
             student=student,
             today_record=today_record,
+            active_session=active_session,
             college_lat=app.config.get("COLLEGE_LAT", COLLEGE_LAT),
             college_lng=app.config.get("COLLEGE_LNG", COLLEGE_LNG),
             geofence_radius=app.config.get("GEOFENCE_RADIUS_METERS", GEOFENCE_RADIUS_METERS)
@@ -220,6 +235,11 @@ def create_app():
     def mark_attendance_post():
         """Receive lat/lng from student's browser and mark attendance."""
         student_id = session["user_id"]
+        
+        # Check active session lock
+        active_session = get_active_session()
+        if not active_session:
+            return jsonify({"status": "error", "message": "Attendance check-in blocked: No active class session is currently running."}), 403
         
         # Parse JSON payload
         data = request.get_json() or {}
@@ -314,13 +334,9 @@ def create_app():
     @login_required("teacher")
     def generate_poster():
         """Teacher-only page to view and print the campus static QR poster."""
-        # Find the server's LAN IP or default to local IP
-        from geo_fence.fence_manager import get_local_ip
-        local_ip = get_local_ip()
-        
         # Build the static URL that students will scan:
-        # e.g., http://192.168.29.218:5000/mark-attendance
-        poster_url = f"http://{local_ip}:5000/mark-attendance"
+        # We dynamically use the current request's host to support HTTPS tunnels (like ngrok) seamlessly!
+        poster_url = f"{request.host_url.rstrip('/')}/mark-attendance"
         
         # Generate the QR code for this URL
         try:
@@ -407,6 +423,25 @@ def create_app():
         except Exception:
             students = []
 
+        # All teachers for registry list
+        try:
+            from database.models.teacher import get_all_teachers
+            teachers = get_all_teachers()
+        except Exception:
+            teachers = []
+
+        # Active attendance session
+        try:
+            active_session = get_active_session()
+        except Exception:
+            active_session = None
+
+        # All academic ratings
+        try:
+            all_ratings = get_all_ratings()
+        except Exception:
+            all_ratings = []
+
         return render_template(
             "teacher_dashboard.html",
             summary=summary,
@@ -415,7 +450,11 @@ def create_app():
             alerts=alerts,
             today_records=today_records,
             students=students,
+            teachers=teachers,
             teacher_name=session.get("user_name", "Teacher"),
+            current_teacher_id=session.get("user_id", ""),
+            active_session=active_session,
+            all_ratings=all_ratings,
         )
 
     @app.route("/teacher/add-student", methods=["POST"])
@@ -424,19 +463,57 @@ def create_app():
         """Add a new student from the teacher dashboard."""
         student_id = request.form.get("student_id", "").strip().upper()
         name = request.form.get("name", "").strip()
-        class_ = request.form.get("class_", "").strip()
+        department = request.form.get("department", "").strip().upper()
+        year = request.form.get("year", "").strip()
+        semester = request.form.get("semester", "").strip()
         email = request.form.get("email", "").strip()
         phone = request.form.get("phone", "").strip()
 
-        if not student_id or not name or not class_:
-            flash("Student ID, Name, and Class are required.", "error")
+        if not student_id or not name or not department or not year or not semester:
+            flash("Student ID, Name, Department, Year, and Semester are required.", "error")
             return redirect(url_for("teacher_dashboard"))
 
         try:
-            create_student(student_id, name, class_, email, phone)
+            year = int(year)
+            semester = int(semester)
+            if not (1 <= year <= 4):
+                raise ValueError("Invalid year selected (must be 1-4).")
+            if not (1 <= semester <= 8):
+                raise ValueError("Invalid semester selected (must be 1-8).")
+            
+            # Check year-semester mapping validity
+            # Year 1: Sem 1-2, Year 2: Sem 3-4, Year 3: Sem 5-6, Year 4: Sem 7-8
+            expected_year = (semester + 1) // 2
+            if expected_year != year:
+                raise ValueError(f"Semester {semester} does not belong to Year {year} (expected Year {expected_year}).")
+
+            create_student(student_id, name, department, year, semester, email, phone)
             flash(f"Student '{name}' ({student_id}) added successfully!", "success")
         except Exception as e:
             flash(f"Error adding student: {e}", "error")
+
+        return redirect(url_for("teacher_dashboard"))
+
+    @app.route("/teacher/add-teacher", methods=["POST"])
+    @login_required("teacher")
+    def add_teacher():
+        """Register a new teacher from the teacher dashboard."""
+        teacher_id = request.form.get("teacher_id", "").strip().upper()
+        name = request.form.get("name", "").strip()
+        email = request.form.get("email", "").strip()
+        department = request.form.get("department", "").strip().upper()
+        password = request.form.get("password", "")
+
+        if not teacher_id or not name or not email or not department or not password:
+            flash("All fields are required to register a teacher.", "error")
+            return redirect(url_for("teacher_dashboard"))
+
+        try:
+            from database.models.teacher import create_teacher
+            create_teacher(teacher_id, name, email, department, password)
+            flash(f"Teacher '{name}' ({teacher_id}) registered successfully!", "success")
+        except Exception as e:
+            flash(f"Error registering teacher: {e}", "error")
 
         return redirect(url_for("teacher_dashboard"))
 
@@ -452,6 +529,28 @@ def create_app():
             flash(f"Error deleting student: {e}", "error")
         return redirect(url_for("teacher_dashboard"))
 
+    @app.route("/teacher/delete-teacher/<teacher_id>", methods=["POST"])
+    @login_required("teacher")
+    def delete_teacher_route(teacher_id):
+        """Physically delete a teacher from the system."""
+        current_teacher_id = session.get("user_id", "")
+        if teacher_id.upper() == current_teacher_id.upper():
+            flash("Error: You cannot delete your own account while logged in.", "error")
+            return redirect(url_for("teacher_dashboard"))
+
+        try:
+            from database.models.teacher import get_teacher, delete_teacher
+            teacher = get_teacher(teacher_id)
+            if not teacher:
+                flash("Teacher not found.", "error")
+                return redirect(url_for("teacher_dashboard"))
+                
+            delete_teacher(teacher_id)
+            flash(f"Teacher '{teacher['name']}' ({teacher_id}) has been successfully deleted.", "success")
+        except Exception as e:
+            flash(f"Error deleting teacher: {e}", "error")
+        return redirect(url_for("teacher_dashboard"))
+
     @app.route("/teacher/refresh-stats", methods=["POST"])
     @login_required("teacher")
     def refresh_stats():
@@ -461,6 +560,70 @@ def create_app():
             flash("Behavior statistics refreshed successfully!", "success")
         except Exception as e:
             flash(f"Error refreshing stats: {e}", "error")
+        return redirect(url_for("teacher_dashboard"))
+
+    @app.route("/teacher/start-session", methods=["POST"])
+    @login_required("teacher")
+    def start_session():
+        """Create and start a new active timed attendance session."""
+        session_name = request.form.get("session_name", "").strip()
+        duration = request.form.get("duration", "").strip()
+        teacher_id = session.get("user_id")
+
+        if not session_name or not duration:
+            flash("Session subject/name and duration are required.", "error")
+            return redirect(url_for("teacher_dashboard"))
+
+        try:
+            duration = int(duration)
+            if duration <= 0:
+                raise ValueError("Duration must be a positive integer.")
+            
+            create_session(session_name, teacher_id, duration)
+            flash(f"Attendance session '{session_name}' started successfully for {duration} minutes!", "success")
+        except Exception as e:
+            flash(f"Error starting session: {e}", "error")
+
+        return redirect(url_for("teacher_dashboard"))
+
+    @app.route("/teacher/end-session", methods=["POST"])
+    @login_required("teacher")
+    def end_session():
+        """Manually close the currently active attendance session."""
+        try:
+            end_active_session()
+            flash("Active attendance session closed successfully.", "success")
+        except Exception as e:
+            flash(f"Error closing session: {e}", "error")
+        return redirect(url_for("teacher_dashboard"))
+
+    @app.route("/teacher/submit-rating", methods=["POST"])
+    @login_required("teacher")
+    def submit_rating_route():
+        """Submit or update a student's subject-wise rating and feedback."""
+        student_id = request.form.get("student_id", "").strip().upper()
+        subject = request.form.get("subject", "").strip()
+        rating = request.form.get("rating", "").strip()
+        comment = request.form.get("comment", "").strip()
+        teacher_id = session.get("user_id")
+
+        if not student_id or not subject or not rating or not comment:
+            flash("Student ID, Subject, Rating, and Comments are required.", "error")
+            return redirect(url_for("teacher_dashboard"))
+
+        try:
+            rating = int(rating)
+            if not (1 <= rating <= 5):
+                raise ValueError("Rating must be between 1 and 5.")
+            
+            # Verify student exists first
+            get_student(student_id)
+            
+            submit_rating(student_id, teacher_id, subject, rating, comment)
+            flash(f"Subject rating for student '{student_id}' in '{subject}' submitted successfully!", "success")
+        except Exception as e:
+            flash(f"Error submitting rating: {e}", "error")
+
         return redirect(url_for("teacher_dashboard"))
 
     # ── Helpers ────────────────────────────────────────────────

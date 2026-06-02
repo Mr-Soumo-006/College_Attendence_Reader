@@ -8,6 +8,17 @@ CREATE DATABASE IF NOT EXISTS smart_campus
 
 USE smart_campus;
 
+-- ── Teachers ────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS teachers (
+    id          INT          AUTO_INCREMENT PRIMARY KEY,
+    teacher_id  VARCHAR(20)  NOT NULL UNIQUE,
+    name        VARCHAR(100) NOT NULL,
+    email       VARCHAR(120) NOT NULL UNIQUE,
+    department  VARCHAR(50)  NOT NULL,
+    password    VARCHAR(255) NOT NULL,
+    created_at  DATETIME     DEFAULT CURRENT_TIMESTAMP
+);
+
 -- ── Students ────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS students (
     id             INT          AUTO_INCREMENT PRIMARY KEY,
@@ -20,7 +31,10 @@ CREATE TABLE IF NOT EXISTS students (
     face_encoding  LONGTEXT,
     risk_level     ENUM('LOW','MEDIUM','HIGH') DEFAULT 'LOW',
     enrolled_at    DATETIME     DEFAULT CURRENT_TIMESTAMP,
-    is_active      TINYINT(1)   DEFAULT 1
+    is_active      TINYINT(1)   DEFAULT 1,
+    department     VARCHAR(50)  NOT NULL,
+    year           INT          NOT NULL,
+    semester       INT          NOT NULL
 );
 
 -- ── Attendance ──────────────────────────────────────────────
@@ -84,3 +98,31 @@ CREATE INDEX IF NOT EXISTS idx_att_date      ON attendance(date);
 CREATE INDEX IF NOT EXISTS idx_att_status    ON attendance(status);
 CREATE INDEX IF NOT EXISTS idx_alert_student ON alerts(student_id);
 CREATE INDEX IF NOT EXISTS idx_alert_unread  ON alerts(is_read);
+
+-- ── Attendance Sessions ─────────────────────────────────────
+CREATE TABLE IF NOT EXISTS attendance_sessions (
+    id           INT          AUTO_INCREMENT PRIMARY KEY,
+    session_name VARCHAR(100) NOT NULL,
+    teacher_id   VARCHAR(20)  NOT NULL,
+    start_time   DATETIME     NOT NULL,
+    end_time     DATETIME     NOT NULL,
+    is_active    TINYINT(1)   DEFAULT 1,
+    created_at   DATETIME     DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (teacher_id) REFERENCES teachers(teacher_id) ON DELETE CASCADE
+);
+
+-- ── Subject-Wise Performance Ratings ────────────────────────
+CREATE TABLE IF NOT EXISTS student_ratings (
+    id           INT          AUTO_INCREMENT PRIMARY KEY,
+    student_id   VARCHAR(20)  NOT NULL,
+    teacher_id   VARCHAR(20)  NOT NULL,
+    subject      VARCHAR(100) NOT NULL,
+    rating       INT          NOT NULL,
+    comment      TEXT,
+    created_at   DATETIME     DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (student_id) REFERENCES students(student_id) ON DELETE CASCADE,
+    FOREIGN KEY (teacher_id) REFERENCES teachers(teacher_id) ON DELETE CASCADE,
+    UNIQUE KEY uq_student_subject (student_id, subject)
+);
+
+CREATE INDEX IF NOT EXISTS idx_rating_student ON student_ratings(student_id);
