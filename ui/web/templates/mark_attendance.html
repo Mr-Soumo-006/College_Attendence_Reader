@@ -394,6 +394,13 @@
 
   let userCoords = null;
 
+  // Retrieve or generate a persistent unique device identifier for One Phone, One Person security
+  let deviceUuid = localStorage.getItem('smart_campus_device_uuid');
+  if (!deviceUuid) {
+    deviceUuid = 'dev_' + Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+    localStorage.setItem('smart_campus_device_uuid', deviceUuid);
+  }
+
   // Haversine formula on client-side for immediate visual verification
   function haversineDistance(lat1, lon1, lat2, lon2) {
     const R = 6371000; // Earth radius in meters
@@ -498,13 +505,19 @@
     markBtn.className = "btn-mark loading";
     markBtn.innerHTML = `<span>⏳</span> Marking attendance...`;
 
+    const payload = {
+      lat: userCoords.lat,
+      lng: userCoords.lng,
+      device_id: deviceUuid
+    };
+
     // POST coordinates to server
     fetch("{{ url_for('mark_attendance_post') }}", {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
       },
-      body: JSON.stringify(userCoords)
+      body: JSON.stringify(payload)
     })
     .then(response => response.json().then(data => ({ status: response.status, body: data })))
     .then(res => {

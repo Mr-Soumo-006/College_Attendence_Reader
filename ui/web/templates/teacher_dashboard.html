@@ -1176,11 +1176,23 @@
                 <td>Sem {{ s.semester }}</td>
                 <td style="font-size: 0.72rem; color: rgba(255,255,255,0.45);">{{ s.email|default('—') }}</td>
                 <td>
-                  <form method="POST" action="{{ url_for('delete_student_route', student_id=s.student_id) }}" style="margin:0;" onsubmit="return confirm('Are you sure you want to delete student {{ s.name }}? This will permanently delete all records!');">
-                    <button type="submit" style="background: rgba(244, 63, 94, 0.12); border: 1px solid rgba(244, 63, 94, 0.25); color: #fda4af; padding: 3px 8px; border-radius: 4px; font-size: 0.68rem; font-weight: 700; cursor: pointer; transition: all 0.2s ease;" onmouseover="this.style.background='rgba(244, 63, 94, 0.25)'" onmouseout="this.style.background='rgba(244, 63, 94, 0.12)'">
-                      🗑&nbsp;Delete
-                    </button>
-                  </form>
+                  <div style="display: flex; gap: 8px; align-items: center;">
+                    {% if s.device_id %}
+                      <span class="badge badge-green" style="font-size: 0.65rem; border-color: rgba(16, 185, 129, 0.35);" title="Device Signature: {{ s.device_id }}">🔒 Bound</span>
+                      <form method="POST" action="{{ url_for('reset_student_device_route', student_id=s.student_id) }}" style="margin:0;" onsubmit="return confirm('Are you sure you want to reset the device binding for {{ s.name }}? This will allow them to register a new phone.');">
+                        <button type="submit" style="background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.25); color: #fde047; padding: 3px 8px; border-radius: 4px; font-size: 0.68rem; font-weight: 700; cursor: pointer; transition: all 0.2s ease;" onmouseover="this.style.background='rgba(245, 158, 11, 0.25)'" onmouseout="this.style.background='rgba(245, 158, 11, 0.12)'">
+                          🔄 Reset Lock
+                        </button>
+                      </form>
+                    {% else %}
+                      <span class="badge badge-amber" style="font-size: 0.65rem; border-color: rgba(245, 158, 11, 0.35);">🔓 Unbound</span>
+                    {% endif %}
+                    <form method="POST" action="{{ url_for('delete_student_route', student_id=s.student_id) }}" style="margin:0;" onsubmit="return confirm('Are you sure you want to delete student {{ s.name }}? This will permanently delete all records!');">
+                      <button type="submit" style="background: rgba(244, 63, 94, 0.12); border: 1px solid rgba(244, 63, 94, 0.25); color: #fda4af; padding: 3px 8px; border-radius: 4px; font-size: 0.68rem; font-weight: 700; cursor: pointer; transition: all 0.2s ease;" onmouseover="this.style.background='rgba(244, 63, 94, 0.25)'" onmouseout="this.style.background='rgba(244, 63, 94, 0.12)'">
+                        🗑&nbsp;Delete
+                      </button>
+                    </form>
+                  </div>
                 </td>
               </tr>
               {% endfor %}

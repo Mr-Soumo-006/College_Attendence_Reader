@@ -29,6 +29,7 @@ from config.settings import (
 from database.connection import DBConnection, init_db
 from database.models.student import (
     get_student, get_all_students, create_student, delete_student,
+    bind_student_device, reset_student_device, get_student_by_device,
 )
 from database.models.attendance import (
     get_history, get_all_today, get_today_record, mark_attendance,
@@ -245,9 +246,47 @@ def create_app():
         data = request.get_json() or {}
         lat = data.get("lat")
         lng = data.get("lng")
+        device_id = data.get("device_id")
 
         if lat is None or lng is None:
             return jsonify({"status": "error", "message": "Location data is missing. Please enable GPS."}), 400
+
+        if not device_id:
+            return jsonify({"status": "error", "message": "Device verification failed: Missing device identifier."}), 400
+
+        # Device ID Validation
+        try:
+            student = get_student(student_id)
+            registered_device_id = student.get("device_id")
+            
+            if not registered_device_id:
+                # First check-in: Check if this device is already bound to another student (Proxy Prevention!)
+                other_student = get_student_by_device(device_id)
+                if other_student:
+                    # Log a CRITICAL alert for proxy attempt
+                    from database.models.alert import create_alert
+                    msg = f"Proxy Attempt: Student {student['name']} ({student_id}) tried to register device already bound to student {other_student['name']} ({other_student['student_id']})."
+                    create_alert(student_id=student_id, alert_type="PROXY_ATTEMPT", message=msg, severity="CRITICAL")
+                    return jsonify({"status": "error", "message": "Security error: This device is already registered to another student. You cannot mark attendance on another student's phone."}), 403
+                
+                # Bind this device to the student
+                bind_student_device(student_id, device_id)
+            else:
+                # Subsequent check-in: Verify it matches the registered device ID
+                if registered_device_id != device_id:
+                    # Check if mismatching device belongs to another student
+                    other_student = get_student_by_device(device_id)
+                    from database.models.alert import create_alert
+                    if other_student:
+                        msg = f"Proxy Attempt: Student {student['name']} ({student_id}) tried to check in using a device bound to student {other_student['name']} ({other_student['student_id']})."
+                        create_alert(student_id=student_id, alert_type="PROXY_ATTEMPT", message=msg, severity="CRITICAL")
+                    else:
+                        msg = f"Device Mismatch: Student {student['name']} ({student_id}) tried to check in from a new/unregistered device."
+                        create_alert(student_id=student_id, alert_type="PROXY_ATTEMPT", message=msg, severity="WARNING")
+                        
+                    return jsonify({"status": "error", "message": "Security block: This device is not registered to your profile. Please contact a teacher to reset your device lock."}), 403
+        except Exception as e:
+            return jsonify({"status": "error", "message": f"Device verification failed: {str(e)}"}), 500
 
         try:
             lat = float(lat)
@@ -298,7 +337,8 @@ def create_app():
                 status=status,
                 minutes_late=mins_late,
                 ip_address=client_ip,
-                auth_method="GPS"
+                auth_method="GPS",
+                device_id=device_id
             )
 
             # Trigger analytics refresh
@@ -527,6 +567,18 @@ def create_app():
             flash(f"Student '{student['name']}' ({student_id}) has been successfully deleted.", "success")
         except Exception as e:
             flash(f"Error deleting student: {e}", "error")
+        return redirect(url_for("teacher_dashboard"))
+
+    @app.route("/teacher/reset-device/<student_id>", methods=["POST"])
+    @login_required("teacher")
+    def reset_student_device_route(student_id):
+        """Reset a student's bound device ID to allow a new phone binding."""
+        try:
+            student = get_student(student_id)
+            reset_student_device(student_id)
+            flash(f"Device lock for student '{student['name']}' ({student_id}) has been successfully reset.", "success")
+        except Exception as e:
+            flash(f"Error resetting student device: {e}", "error")
         return redirect(url_for("teacher_dashboard"))
 
     @app.route("/teacher/delete-teacher/<teacher_id>", methods=["POST"])

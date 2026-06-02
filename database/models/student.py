@@ -84,3 +84,31 @@ def delete_student(student_id: str) -> None:
             "DELETE FROM students WHERE student_id=%s",
             (student_id,),
         )
+
+
+def bind_student_device(student_id: str, device_id: str) -> None:
+    """Bind a specific device ID to a student's profile."""
+    with DBConnection() as (conn, cur):
+        cur.execute(
+            "UPDATE students SET device_id=%s WHERE student_id=%s",
+            (device_id, student_id),
+        )
+
+
+def reset_student_device(student_id: str) -> None:
+    """Reset the bound device ID for a student to allow new device registration."""
+    with DBConnection() as (conn, cur):
+        cur.execute(
+            "UPDATE students SET device_id=NULL WHERE student_id=%s",
+            (student_id,),
+        )
+
+
+def get_student_by_device(device_id: str) -> dict | None:
+    """Find a student who is currently bound to the given device ID."""
+    with DBConnection() as (conn, cur):
+        cur.execute(
+            "SELECT * FROM students WHERE device_id=%s AND is_active=1",
+            (device_id,),
+        )
+        return cur.fetchone()
