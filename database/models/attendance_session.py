@@ -4,11 +4,12 @@ CRUD helpers for the `attendance_sessions` table.
 
 from datetime import datetime, timedelta
 from database.connection import DBConnection
+from utils.time_utils import now as get_now
 
 
 def create_session(session_name: str, teacher_id: str, duration_minutes: int) -> dict:
     """Insert a new session starting now and ending after the given duration."""
-    start_time = datetime.now()
+    start_time = get_now().replace(tzinfo=None)
     end_time = start_time + timedelta(minutes=duration_minutes)
     
     # Deactivate any currently active sessions first to avoid duplicates
@@ -25,7 +26,7 @@ def create_session(session_name: str, teacher_id: str, duration_minutes: int) ->
 
 def get_active_session() -> dict | None:
     """Retrieve the currently active session if one exists and hasn't expired."""
-    now = datetime.now()
+    now = get_now().replace(tzinfo=None)
     with DBConnection() as (conn, cur):
         cur.execute(
             """SELECT id, session_name, teacher_id, start_time, end_time, is_active 

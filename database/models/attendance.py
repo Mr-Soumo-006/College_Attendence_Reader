@@ -4,14 +4,14 @@ CRUD helpers for the `attendance` table.
 
 from datetime import date, datetime
 from database.connection import DBConnection
-from utils.time_utils import today_str
+from utils.time_utils import today_str, now as get_now
 
 
 def mark_attendance(student_id: str, status: str, minutes_late: int = 0,
                     ip_address: str = "", auth_method: str = "QR+FACE", device_id: str = "") -> dict:
     """Insert or update today's attendance for *student_id*. Returns the row."""
     today = today_str()
-    now = datetime.now()
+    now = get_now().replace(tzinfo=None)
     with DBConnection() as (conn, cur):
         cur.execute(
             """INSERT INTO attendance
