@@ -171,6 +171,32 @@ def create_app():
         history = get_history(student_id, days=30)
         today_record = get_today_record(student_id)
 
+        # Group history by date for a clean "per day" view
+        daily_history = {}
+        for entry in history:
+            d = str(entry["date"])
+            if d not in daily_history:
+                daily_history[d] = {
+                    "date": entry["date"],
+                    "status": "ABSENT",
+                    "classes": []
+                }
+            
+            # If any class is ON TIME or LATE, they are considered overall present/late for the day
+            status = entry["status"]
+            if status in ("ON TIME", "PRESENT"):
+                daily_history[d]["status"] = "PRESENT"
+            elif status == "LATE" and daily_history[d]["status"] not in ("ON TIME", "PRESENT"):
+                daily_history[d]["status"] = "LATE"
+                
+            daily_history[d]["classes"].append({
+                "session_name": entry.get("session_name") or "Manual/Other",
+                "time_in": entry["time_in"],
+                "status": status
+            })
+        
+        sorted_daily = sorted(daily_history.values(), key=lambda x: x["date"], reverse=True)
+
         # Compute stats from all_stats if behavior_stats is empty
         if not stats:
             all_stats = compute_all_stats()
@@ -206,6 +232,7 @@ def create_app():
             dow_pattern=dow_pattern,
             trend=trend,
             ratings=ratings,
+            daily_history=sorted_daily,
         )
 
     @app.route("/mark-attendance", methods=["GET"])

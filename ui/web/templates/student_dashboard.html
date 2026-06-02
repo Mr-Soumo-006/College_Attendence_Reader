@@ -805,44 +805,132 @@
   <div class="timeline-section">
     <h2 class="section-title">Recent Attendance History</h2>
 
-    {% if history %}
-      <div class="timeline">
-        {% for entry in history[:15] %}
-          {% set s = entry.status|default('ABSENT')|upper %}
-          <div class="timeline-entry {% if s == 'ON TIME' or s == 'PRESENT' %}status-on-time{% elif s == 'LATE' %}status-late{% else %}status-absent{% endif %}">
-            <div class="timeline-card">
-              <span class="tl-date">{{ entry.date|default('—') }}</span>
-              <span class="tl-time">{{ entry.time_in|default('—') }}</span>
+    <!-- Toggles -->
+    <div style="display: flex; gap: 10px; margin-bottom: 1.75rem; justify-content: center; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06); padding: 5px; border-radius: 12px; width: fit-content; margin-left: auto; margin-right: auto; backdrop-filter: blur(10px);">
+      <button onclick="toggleHistoryView('daily')" id="btn-view-daily" style="background: #7c3aed; border: none; border-radius: 8px; color: white; padding: 6px 18px; font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.8rem; font-weight: 700; cursor: pointer; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: 0 4px 15px rgba(124, 58, 237, 0.25);">📅 Daily Summary</button>
+      <button onclick="toggleHistoryView('sessions')" id="btn-view-sessions" style="background: transparent; border: none; border-radius: 8px; color: rgba(255,255,255,0.45); padding: 6px 18px; font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.8rem; font-weight: 700; cursor: pointer; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);">⚡ Class Sessions</button>
+    </div>
 
-              {% if s == 'ON TIME' or s == 'PRESENT' %}
-                <span class="tl-status on-time">On Time</span>
-              {% elif s == 'LATE' %}
-                <span class="tl-status late">Late</span>
-                {% if entry.minutes_late|default(0)|int > 0 %}
-                  <span class="tl-minutes">+{{ entry.minutes_late|int }} min</span>
-                {% endif %}
-              {% else %}
-                <span class="tl-status absent">Absent</span>
-              {% endif %}
-
-              {% if entry.auth_method|default('') %}
-                <span class="tl-auth">{{ entry.auth_method }}</span>
-              {% endif %}
-
-              {% if entry.session_name %}
-                <span class="tl-subject" style="display: inline-block; margin-left: 8px; font-size: 0.72rem; padding: 2px 8px; border-radius: 4px; background: rgba(124, 58, 237, 0.15); border: 1px solid rgba(124, 58, 237, 0.3); color: #c4b5fd; font-weight: 600;">{{ entry.session_name }}</span>
-              {% endif %}
+    <!-- 1. Daily Summary View -->
+    <div id="history-view-daily" style="display: block;">
+      {% if daily_history %}
+        <div style="display: grid; gap: 14px; max-width: 550px; margin: 0 auto;">
+          {% for day in daily_history %}
+            <div class="glass-card" style="padding: 1.15rem 1.4rem; border-radius: 16px; display: flex; flex-direction: column; gap: 8px; border-color: rgba(255,255,255,0.05); background: rgba(255,255,255,0.01); transition: all 0.25s ease;" onmouseover="this.style.borderColor='rgba(124,58,237,0.25)'; this.style.background='rgba(255,255,255,0.02)'" onmouseout="this.style.borderColor='rgba(255,255,255,0.05)'; this.style.background='rgba(255,255,255,0.01)'">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div style="font-family: 'Outfit', sans-serif; font-weight: 700; font-size: 1rem; color: #f0ecfc;">📅 {{ day.date }}</div>
+                <div>
+                  {% if day.status == 'PRESENT' %}
+                    <span class="badge badge-green" style="font-size: 0.68rem; border-color: rgba(16, 185, 129, 0.3);">🟢 Present</span>
+                  {% elif day.status == 'LATE' %}
+                    <span class="badge badge-amber" style="font-size: 0.68rem; border-color: rgba(245, 158, 11, 0.3);">🟡 Late</span>
+                  {% else %}
+                    <span class="badge badge-red" style="font-size: 0.68rem; border-color: rgba(244, 63, 94, 0.3);">🔴 Absent</span>
+                  {% endif %}
+                </div>
+              </div>
+              <div style="display: flex; flex-direction: column; gap: 6px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.04); margin-top: 2px;">
+                {% for c in day.classes %}
+                  <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.78rem; color: rgba(255,255,255,0.55);">
+                    <div style="display: flex; align-items: center; gap: 6px;">
+                      <span style="font-size: 0.72rem; opacity: 0.7;">🎓</span>
+                      <span style="font-weight: 600; color: rgba(255,255,255,0.85);">{{ c.session_name }}</span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                      <span style="font-size: 0.7rem; font-family: monospace;">{{ c.time_in }}</span>
+                      {% if c.status == 'ON TIME' or c.status == 'PRESENT' %}
+                        <span style="color: #34d399; font-weight: 700; font-size: 0.72rem;">On Time</span>
+                      {% elif c.status == 'LATE' %}
+                        <span style="color: #fbbf24; font-weight: 700; font-size: 0.72rem;">Late</span>
+                      {% else %}
+                        <span style="color: #f87171; font-weight: 700; font-size: 0.72rem;">Absent</span>
+                      {% endif %}
+                    </div>
+                  </div>
+                {% endfor %}
+              </div>
             </div>
-          </div>
-        {% endfor %}
-      </div>
-    {% else %}
-      <div class="empty-state glass-card">
-        <div class="empty-state-icon">📭</div>
-        <p>No attendance records yet</p>
-      </div>
-    {% endif %}
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="empty-state glass-card">
+          <div class="empty-state-icon">📭</div>
+          <p>No daily attendance logs yet</p>
+        </div>
+      {% endif %}
+    </div>
+
+    <!-- 2. Detailed Sessions Timeline View -->
+    <div id="history-view-sessions" style="display: none;">
+      {% if history %}
+        <div class="timeline">
+          {% for entry in history[:15] %}
+            {% set s = entry.status|default('ABSENT')|upper %}
+            <div class="timeline-entry {% if s == 'ON TIME' or s == 'PRESENT' %}status-on-time{% elif s == 'LATE' %}status-late{% else %}status-absent{% endif %}">
+              <div class="timeline-card">
+                <span class="tl-date">{{ entry.date|default('—') }}</span>
+                <span class="tl-time">{{ entry.time_in|default('—') }}</span>
+
+                {% if s == 'ON TIME' or s == 'PRESENT' %}
+                  <span class="tl-status on-time">On Time</span>
+                {% elif s == 'LATE' %}
+                  <span class="tl-status late">Late</span>
+                  {% if entry.minutes_late|default(0)|int > 0 %}
+                    <span class="tl-minutes">+{{ entry.minutes_late|int }} min</span>
+                  {% endif %}
+                {% else %}
+                  <span class="tl-status absent">Absent</span>
+                {% endif %}
+
+                {% if entry.auth_method|default('') %}
+                  <span class="tl-auth">{{ entry.auth_method }}</span>
+                {% endif %}
+
+                {% if entry.session_name %}
+                  <span class="tl-subject" style="display: inline-block; margin-left: 8px; font-size: 0.72rem; padding: 2px 8px; border-radius: 4px; background: rgba(124, 58, 237, 0.15); border: 1px solid rgba(124, 58, 237, 0.3); color: #c4b5fd; font-weight: 600;">{{ entry.session_name }}</span>
+                {% endif %}
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="empty-state glass-card">
+          <div class="empty-state-icon">📭</div>
+          <p>No attendance records yet</p>
+        </div>
+      {% endif %}
+    </div>
   </div>
+
+  <!-- Toggle Action Script -->
+  <script>
+    function toggleHistoryView(view) {
+      const dailyEl = document.getElementById('history-view-daily');
+      const sessionsEl = document.getElementById('history-view-sessions');
+      const btnDaily = document.getElementById('btn-view-daily');
+      const btnSessions = document.getElementById('btn-view-sessions');
+      
+      if (view === 'daily') {
+        dailyEl.style.display = 'block';
+        sessionsEl.style.display = 'none';
+        btnDaily.style.background = '#7c3aed';
+        btnDaily.style.color = 'white';
+        btnDaily.style.boxShadow = '0 4px 15px rgba(124, 58, 237, 0.25)';
+        btnSessions.style.background = 'transparent';
+        btnSessions.style.color = 'rgba(255,255,255,0.45)';
+        btnSessions.style.boxShadow = 'none';
+      } else {
+        dailyEl.style.display = 'none';
+        sessionsEl.style.display = 'block';
+        btnSessions.style.background = '#7c3aed';
+        btnSessions.style.color = 'white';
+        btnSessions.style.boxShadow = '0 4px 15px rgba(124, 58, 237, 0.25)';
+        btnDaily.style.background = 'transparent';
+        btnDaily.style.color = 'rgba(255,255,255,0.45)';
+        btnDaily.style.boxShadow = 'none';
+      }
+    }
+  </script>
 
 </div>
 {% endblock %}
