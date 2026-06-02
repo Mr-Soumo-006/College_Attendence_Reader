@@ -484,6 +484,9 @@
     grid-template-columns: 1fr 1fr;
     gap: 36px;
   }
+  .split-layout > div {
+    min-width: 0;
+  }
   .alerts-panel {
     display: flex;
     flex-direction: column;
@@ -1156,7 +1159,7 @@
      TAB 5 — STUDENT REGISTRY
      ══════════════════════════════════════════════════ -->
 <div id="tab-student-registry" class="tab-panel">
-  <div class="split-layout" style="grid-template-columns: 1fr 1.15fr; gap: 36px;">
+  <div class="split-layout" style="grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: 36px;">
     <!-- Student Registry List -->
     <div>
       <div class="section-title fade-up">
@@ -1181,7 +1184,6 @@
                 <th>Year</th>
                 <th>Sem</th>
                 <th>Email</th>
-                <th>Risk Level</th>
                 <th>Actions</th>
               </tr>
             </thead>
@@ -1194,20 +1196,6 @@
                 <td>Year {{ s.year }}</td>
                 <td>Sem {{ s.semester }}</td>
                 <td style="font-size: 0.72rem; color: rgba(255,255,255,0.45);">{{ s.email|default('—') }}</td>
-                <td>
-                  <form method="POST" action="{{ url_for('update_student_risk_route', student_id=s.student_id) }}" style="margin: 0;">
-                    <input type="hidden" name="redirect_tab" value="student-registry">
-                    <select name="risk_level" onchange="this.form.submit()" class="form-input" style="padding: 4px 8px; font-size: 0.75rem; border-radius: 6px; font-weight: 700; width: fit-content; background: rgba(25, 23, 38, 0.85); cursor: pointer; text-align: center;
-                      {% if s.risk_level|default('LOW') == 'HIGH' %} color: #fb7185; border: 1px solid rgba(244, 63, 94, 0.4);
-                      {% elif s.risk_level|default('LOW') == 'MEDIUM' %} color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.4);
-                      {% else %} color: #34d399; border: 1px solid rgba(16, 185, 129, 0.4);
-                      {% endif %}">
-                      <option value="LOW" {% if s.risk_level|default('LOW') == 'LOW' %}selected{% endif %}>LOW</option>
-                      <option value="MEDIUM" {% if s.risk_level|default('LOW') == 'MEDIUM' %}selected{% endif %}>MEDIUM</option>
-                      <option value="HIGH" {% if s.risk_level|default('LOW') == 'HIGH' %}selected{% endif %}>HIGH</option>
-                    </select>
-                  </form>
-                </td>
                 <td>
                   <div style="display: flex; gap: 8px; align-items: center;">
                     {% if s.device_id %}
@@ -1290,14 +1278,6 @@
           <div class="form-group">
             <label>Phone</label>
             <input type="tel" name="phone" class="form-input" placeholder="Phone number (optional)">
-          </div>
-          <div class="form-group">
-            <label>Attendance Risk Level <span class="req">*</span></label>
-            <select name="risk_level" class="form-input" style="background: rgba(25, 23, 38, 0.85); color: #e0e0e0; border: 1px solid rgba(255,255,255,0.08); padding: 10px 14px; cursor: pointer;" required>
-              <option value="LOW" selected>🟢 LOW (Normal / No Risk)</option>
-              <option value="MEDIUM">🟡 MEDIUM (Intermediate Risk)</option>
-              <option value="HIGH">🔴 HIGH (High Risk / At Risk)</option>
-            </select>
           </div>
           <button type="submit" class="btn-submit">
             ➕ Add Student

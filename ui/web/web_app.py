@@ -592,10 +592,6 @@ def create_app():
                 raise ValueError(f"Semester {semester} does not belong to Year {year} (expected Year {expected_year}).")
 
             create_student(student_id, name, department, year, semester, email, phone)
-            risk_level = request.form.get("risk_level", "LOW").strip().upper()
-            if risk_level in ("LOW", "MEDIUM", "HIGH"):
-                from database.models.student import update_risk_level
-                update_risk_level(student_id, risk_level)
             flash(f"Student '{name}' ({student_id}) added successfully!", "success")
         except Exception as e:
             flash(f"Error adding student: {e}", "error")
