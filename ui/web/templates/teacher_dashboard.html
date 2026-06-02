@@ -12,7 +12,7 @@
     gap: 8px;
     background: rgba(255,255,255,0.03);
     border-radius: 14px;
-    padding: 6px;
+    padding: 6px 16px 6px 6px;
     margin-bottom: 36px;
     border: 1px solid rgba(255,255,255,0.06);
     overflow-x: auto;
@@ -37,6 +37,9 @@
     position: relative;
     white-space: nowrap;
     text-align: center;
+  }
+  .tab-btn:last-child {
+    margin-right: 16px;
   }
   .tab-btn:hover {
     color: rgba(255,255,255,0.7);
@@ -1015,9 +1018,17 @@
               {% endif %}
             </td>
             <td>
-              <span class="badge {{ s.risk_level|default('LOW')|risk_color }} {{ 'badge-glow-red' if s.risk_level|default('LOW') == 'HIGH' else 'badge-glow-green' if s.risk_level|default('LOW') == 'LOW' else 'badge-glow-amber' }}">
-                {{ s.risk_level|default('LOW') }}
-              </span>
+              <form method="POST" action="{{ url_for('update_student_risk_route', student_id=s.student_id) }}" style="margin: 0;">
+                <select name="risk_level" onchange="this.form.submit()" class="form-input" style="padding: 4px 8px; font-size: 0.75rem; border-radius: 6px; font-weight: 700; width: fit-content; background: rgba(25, 23, 38, 0.85); cursor: pointer; text-align: center;
+                  {% if s.risk_level|default('LOW') == 'HIGH' %} color: #fb7185; border: 1px solid rgba(244, 63, 94, 0.4);
+                  {% elif s.risk_level|default('LOW') == 'MEDIUM' %} color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.4);
+                  {% else %} color: #34d399; border: 1px solid rgba(16, 185, 129, 0.4);
+                  {% endif %}">
+                  <option value="LOW" {% if s.risk_level|default('LOW') == 'LOW' %}selected{% endif %}>LOW</option>
+                  <option value="MEDIUM" {% if s.risk_level|default('LOW') == 'MEDIUM' %}selected{% endif %}>MEDIUM</option>
+                  <option value="HIGH" {% if s.risk_level|default('LOW') == 'HIGH' %}selected{% endif %}>HIGH</option>
+                </select>
+              </form>
             </td>
             <td>
               <div style="display: flex; gap: 8px; align-items: center;">
@@ -1145,7 +1156,7 @@
      TAB 5 — STUDENT REGISTRY
      ══════════════════════════════════════════════════ -->
 <div id="tab-student-registry" class="tab-panel">
-  <div class="split-layout">
+  <div class="split-layout" style="grid-template-columns: 1.15fr 1fr; gap: 32px;">
     <!-- Student Registry List -->
     <div>
       <div class="section-title fade-up">
@@ -1249,8 +1260,11 @@
             </div>
             <div>
               <label>Semester <span class="req">*</span></label>
-              <select name="semester" id="student_semester" class="form-input" style="background: rgba(25, 23, 38, 0.85); color: #e0e0e0; border: 1px solid rgba(255,255,255,0.08); padding: 10px 14px;" required>
+              <select name="semester" id="student_semester" class="form-input" style="background: rgba(25, 23, 38, 0.85); color: #e0e0e0; border: 1px solid rgba(255,255,255,0.08); padding: 10px 14px; cursor: pointer;" required>
                 <option value="" disabled selected>Select Semester</option>
+                {% for sem in range(1, 9) %}
+                  <option value="{{ sem }}">Semester {{ sem }}</option>
+                {% endfor %}
               </select>
             </div>
           </div>
@@ -1591,7 +1605,7 @@
           <label style="display: block; font-size: 0.8rem; font-weight: 600; color: rgba(255,255,255,0.55); margin-bottom: 0.5rem; font-family: 'Outfit', sans-serif;">Select Student <span style="color: #f87171;">*</span></label>
           <select name="student_id" class="form-input" style="width: 100%; box-sizing: border-box; background: rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.08); padding: 9px 12px; font-size: 0.85rem; border-radius: 8px; color: #fff; cursor: pointer;" required>
             <option value="" disabled selected>-- Choose Student --</option>
-            {% for s in all_stats|default([]) %}
+            {% for s in students|default([]) %}
               <option value="{{ s.student_id }}">{{ s.name }} ({{ s.student_id }})</option>
             {% endfor %}
           </select>
@@ -1626,7 +1640,7 @@
           <label style="display: block; font-size: 0.8rem; font-weight: 600; color: rgba(255,255,255,0.55); margin-bottom: 0.5rem; font-family: 'Outfit', sans-serif;">Select Student <span style="color: #f87171;">*</span></label>
           <select name="student_id" class="form-input" style="width: 100%; box-sizing: border-box; background: rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.08); padding: 9px 12px; font-size: 0.85rem; border-radius: 8px; color: #fff; cursor: pointer;" required>
             <option value="" disabled selected>-- Choose Student --</option>
-            {% for s in all_stats|default([]) %}
+            {% for s in students|default([]) %}
               <option value="{{ s.student_id }}">{{ s.name }} ({{ s.student_id }})</option>
             {% endfor %}
           </select>
@@ -1821,27 +1835,8 @@
      YEAR-SEMESTER DYNAMIC SELECT
      ═══════════════════════════════════════ */
   function setupYearSemesterDropdowns() {
-    var yearSelect = document.getElementById('student_year');
-    var semSelect = document.getElementById('student_semester');
-    if (!yearSelect || !semSelect) return;
-
-    yearSelect.addEventListener('change', function() {
-      var selectedYear = parseInt(yearSelect.value);
-      semSelect.innerHTML = '<option value="" disabled selected>Select Semester</option>';
-      
-      if (!selectedYear) return;
-      
-      // Calculate semesters for this year: Year 1 -> Sem 1, 2; Year 2 -> Sem 3, 4, etc.
-      var startSem = (selectedYear - 1) * 2 + 1;
-      var endSem = startSem + 1;
-      
-      for (var s = startSem; s <= endSem; s++) {
-        var opt = document.createElement('option');
-        opt.value = s;
-        opt.textContent = 'Semester ' + s;
-        semSelect.appendChild(opt);
-      }
-    });
+    // Dropdowns are pre-populated by default in HTML for independent selection.
+    return;
   }
 
   /* ═══════════════════════════════════════

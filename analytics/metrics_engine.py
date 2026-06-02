@@ -53,7 +53,7 @@ def compute_all_stats() -> list[dict]:
         avg_late = round(sum(late_minutes_list) / len(late_minutes_list), 1) if late_minutes_list else 0.0
 
         streak = _max_absent_streak([x["status"] for x in grp])
-        risk = _risk(absent_pct, late_pct)
+        risk = grp[0].get("risk_level", "LOW")
 
         stats.append({
             "student_id":        sid,

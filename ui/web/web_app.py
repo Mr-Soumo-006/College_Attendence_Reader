@@ -633,6 +633,34 @@ def create_app():
             flash(f"Error deleting student: {e}", "error")
         return redirect(url_for("teacher_dashboard"))
 
+    @app.route("/teacher/update-risk/<student_id>", methods=["POST"])
+    @login_required("teacher")
+    def update_student_risk_route(student_id):
+        """Manually update the risk level of a student."""
+        try:
+            risk_level = request.form.get("risk_level")
+            if not risk_level or risk_level not in ("LOW", "MEDIUM", "HIGH"):
+                flash("Invalid risk level.", "error")
+                return redirect(url_for("teacher_dashboard", tab="analytics"))
+            
+            from database.models.student import update_risk_level
+            update_risk_level(student_id, risk_level)
+            
+            # Keep behavior stats cache table in sync
+            try:
+                with DBConnection() as (conn, cur):
+                    cur.execute(
+                        "UPDATE behavior_stats SET risk_level=%s WHERE student_id=%s",
+                        (risk_level, student_id)
+                    )
+            except Exception:
+                pass
+                
+            flash(f"Risk level for student '{student_id}' has been updated to {risk_level} successfully!", "success")
+        except Exception as e:
+            flash(f"Error updating risk level: {e}", "error")
+        return redirect(url_for("teacher_dashboard", tab="analytics"))
+
     @app.route("/teacher/student-stats/<student_id>", methods=["GET"])
     @login_required("teacher")
     def teacher_student_stats(student_id):
