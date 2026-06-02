@@ -734,6 +734,52 @@
     {% endif %}
   </div>
 
+  {# ============================== 4.2. SUBJECT-WISE ATTENDANCE BREAKDOWN ============================== #}
+  <div class="dow-section glass-card" style="margin-bottom: 2.5rem; animation: fadeInUp 0.7s ease 0.3s both;">
+    <h2 class="section-title">Subject-Wise Attendance Summary</h2>
+    
+    {% if subject_attendance %}
+      <p style="font-size: 0.85rem; color: rgba(255,255,255,0.45); margin-bottom: 1.25rem; line-height: 1.4;">
+        Detailed calculation of your attendance rates and streaks per registered subject.
+      </p>
+      
+      <div class="table-responsive" style="overflow-x: auto; width: 100%;">
+        <table class="glass-table" style="font-size: 0.82rem; min-width: 500px; width: 100%;">
+          <thead>
+            <tr style="border-bottom: 1px solid rgba(255,255,255,0.07);">
+              <th style="font-size:0.72rem; color:rgba(255,255,255,0.35); padding: 8px 0; text-align: left;">Subject</th>
+              <th style="font-size:0.72rem; color:rgba(255,255,255,0.35); text-align:center; padding: 8px 0;">Total Classes</th>
+              <th style="font-size:0.72rem; color:rgba(255,255,255,0.35); text-align:center; padding: 8px 0;">Present</th>
+              <th style="font-size:0.72rem; color:rgba(255,255,255,0.35); text-align:center; padding: 8px 0;">Late</th>
+              <th style="font-size:0.72rem; color:rgba(255,255,255,0.35); text-align:center; padding: 8px 0;">Absent</th>
+              <th style="font-size:0.72rem; color:rgba(255,255,255,0.35); text-align:right; padding: 8px 0;">Attendance Rate</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for s in subject_attendance %}
+              <tr style="border-bottom: 1px solid rgba(255,255,255,0.03);">
+                <td style="font-weight: 600; color: rgba(255,255,255,0.9); padding: 12px 0;">{{ s.subject }}</td>
+                <td style="text-align: center; color: rgba(255,255,255,0.7); padding: 12px 0;">{{ s.total_classes }}</td>
+                <td style="text-align: center; color: #34d399; font-weight: 600; padding: 12px 0;">{{ s.present_count }}</td>
+                <td style="text-align: center; color: #fbbf24; padding: 12px 0;">{{ s.late_count }}</td>
+                <td style="text-align: center; color: #f87171; padding: 12px 0;">{{ s.absent_count }}</td>
+                <td style="text-align: right; font-weight: 700; padding: 12px 0;
+                  {% if s.attendance_rate >= 75 %} color: #34d399; {% elif s.attendance_rate >= 60 %} color: #fbbf24; {% else %} color: #f87171; {% endif %}">
+                  {{ s.attendance_rate }}%
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="no-data-msg" style="text-align: center; padding: 1.5rem; color: rgba(255,255,255,0.35);">
+        <div class="empty-state-icon" style="font-size: 2rem; margin-bottom: 0.5rem;">📚</div>
+        No subject-wise check-ins found yet.
+      </div>
+    {% endif %}
+  </div>
+
   {# ============================== 4.5. ACADEMIC PERFORMANCE & SUBJECT RATINGS ============================== #}
   <div class="dow-section glass-card" style="margin-bottom: 2.5rem; animation: fadeInUp 0.7s ease 0.35s both;">
     <h2 class="section-title">Academic Subject Performance</h2>
@@ -809,6 +855,7 @@
     <div style="display: flex; gap: 10px; margin-bottom: 1.75rem; justify-content: center; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06); padding: 5px; border-radius: 12px; width: fit-content; margin-left: auto; margin-right: auto; backdrop-filter: blur(10px);">
       <button onclick="toggleHistoryView('daily')" id="btn-view-daily" style="background: #7c3aed; border: none; border-radius: 8px; color: white; padding: 6px 18px; font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.8rem; font-weight: 700; cursor: pointer; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: 0 4px 15px rgba(124, 58, 237, 0.25);">📅 Daily Summary</button>
       <button onclick="toggleHistoryView('sessions')" id="btn-view-sessions" style="background: transparent; border: none; border-radius: 8px; color: rgba(255,255,255,0.45); padding: 6px 18px; font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.8rem; font-weight: 700; cursor: pointer; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);">⚡ Class Sessions</button>
+      <button onclick="toggleHistoryView('calendar')" id="btn-view-calendar" style="background: transparent; border: none; border-radius: 8px; color: rgba(255,255,255,0.45); padding: 6px 18px; font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.8rem; font-weight: 700; cursor: pointer; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);">🗓️ Monthly Calendar</button>
     </div>
 
     <!-- 1. Daily Summary View -->
@@ -860,6 +907,52 @@
       {% endif %}
     </div>
 
+    <!-- 3. Personal Monthly Calendar Grid View -->
+    <div id="history-view-calendar" style="display: none;">
+      {% if student_monthly %}
+        <div class="glass-card" style="padding: 1.5rem; border-radius: 20px; border-color: rgba(255,255,255,0.06); background: rgba(255,255,255,0.01); max-width: 450px; margin: 0 auto; backdrop-filter: blur(10px);">
+          <div style="font-family: 'Outfit', sans-serif; font-size: 1.1rem; font-weight: 700; color: #f0ecfc; text-align: center; margin-bottom: 1.25rem; display: flex; align-items: center; justify-content: center; gap: 0.5rem;">
+            <span>🗓️</span> {{ month_name }} {{ current_year }}
+          </div>
+          <div style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; justify-items: center;">
+            <!-- Calendar Headers -->
+            {% for day_name in ['S','M','T','W','T','F','S'] %}
+              <div style="font-size: 0.72rem; font-weight: 700; color: rgba(255,255,255,0.35); text-transform: uppercase; margin-bottom: 4px;">{{ day_name }}</div>
+            {% endfor %}
+            
+            {% for d in monthly_days %}
+              {% set badge = student_monthly.days[d]|default('—') %}
+              <div style="width: 38px; height: 38px; border-radius: 10px; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; font-size: 0.85rem; font-weight: 700; transition: all 0.2s ease;
+                {% if badge == 'P' %}
+                  background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.3); color: #34d399;
+                {% elif badge == 'L' %}
+                  background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.3); color: #fbbf24;
+                {% elif badge == 'A' %}
+                  background: rgba(244, 63, 94, 0.12); border: 1px solid rgba(244, 63, 94, 0.3); color: #f87171;
+                {% else %}
+                  background: rgba(255, 255, 255, 0.02); border: 1px dashed rgba(255, 255, 255, 0.08); color: rgba(255,255,255,0.25);
+                {% endif %}"
+                title="Day {{ d }}: {% if badge == 'P' %}Present{% elif badge == 'L' %}Late{% elif badge == 'A' %}Absent{% else %}No Class{% endif %}">
+                <span>{{ d }}</span>
+              </div>
+            {% endfor %}
+          </div>
+          <!-- Legend -->
+          <div style="display: flex; gap: 0.75rem; justify-content: center; margin-top: 1.5rem; font-size: 0.7rem; border-top: 1px solid rgba(255,255,255,0.04); padding-top: 1rem; flex-wrap: wrap;">
+            <div style="display: flex; align-items: center; gap: 4px;"><span style="color: #34d399;">■</span> Present</div>
+            <div style="display: flex; align-items: center; gap: 4px;"><span style="color: #fbbf24;">■</span> Late</div>
+            <div style="display: flex; align-items: center; gap: 4px;"><span style="color: #f87171;">■</span> Absent</div>
+            <div style="display: flex; align-items: center; gap: 4px;"><span style="color: rgba(255,255,255,0.25);">□</span> No Class</div>
+          </div>
+        </div>
+      {% else %}
+        <div class="empty-state glass-card">
+          <div class="empty-state-icon">🗓️</div>
+          <p>No calendar data for this month</p>
+        </div>
+      {% endif %}
+    </div>
+
     <!-- 2. Detailed Sessions Timeline View -->
     <div id="history-view-sessions" style="display: none;">
       {% if history %}
@@ -907,28 +1000,26 @@
     function toggleHistoryView(view) {
       const dailyEl = document.getElementById('history-view-daily');
       const sessionsEl = document.getElementById('history-view-sessions');
+      const calendarEl = document.getElementById('history-view-calendar');
       const btnDaily = document.getElementById('btn-view-daily');
       const btnSessions = document.getElementById('btn-view-sessions');
+      const btnCalendar = document.getElementById('btn-view-calendar');
       
-      if (view === 'daily') {
-        dailyEl.style.display = 'block';
-        sessionsEl.style.display = 'none';
-        btnDaily.style.background = '#7c3aed';
-        btnDaily.style.color = 'white';
-        btnDaily.style.boxShadow = '0 4px 15px rgba(124, 58, 237, 0.25)';
-        btnSessions.style.background = 'transparent';
-        btnSessions.style.color = 'rgba(255,255,255,0.45)';
-        btnSessions.style.boxShadow = 'none';
-      } else {
-        dailyEl.style.display = 'none';
-        sessionsEl.style.display = 'block';
-        btnSessions.style.background = '#7c3aed';
-        btnSessions.style.color = 'white';
-        btnSessions.style.boxShadow = '0 4px 15px rgba(124, 58, 237, 0.25)';
-        btnDaily.style.background = 'transparent';
-        btnDaily.style.color = 'rgba(255,255,255,0.45)';
-        btnDaily.style.boxShadow = 'none';
-      }
+      dailyEl.style.display = view === 'daily' ? 'block' : 'none';
+      sessionsEl.style.display = view === 'sessions' ? 'block' : 'none';
+      calendarEl.style.display = view === 'calendar' ? 'block' : 'none';
+      
+      btnDaily.style.background = view === 'daily' ? '#7c3aed' : 'transparent';
+      btnDaily.style.color = view === 'daily' ? 'white' : 'rgba(255,255,255,0.45)';
+      btnDaily.style.boxShadow = view === 'daily' ? '0 4px 15px rgba(124, 58, 237, 0.25)' : 'none';
+      
+      btnSessions.style.background = view === 'sessions' ? '#7c3aed' : 'transparent';
+      btnSessions.style.color = view === 'sessions' ? 'white' : 'rgba(255,255,255,0.45)';
+      btnSessions.style.boxShadow = view === 'sessions' ? '0 4px 15px rgba(124, 58, 237, 0.25)' : 'none';
+
+      btnCalendar.style.background = view === 'calendar' ? '#7c3aed' : 'transparent';
+      btnCalendar.style.color = view === 'calendar' ? 'white' : 'rgba(255,255,255,0.45)';
+      btnCalendar.style.boxShadow = view === 'calendar' ? '0 4px 15px rgba(124, 58, 237, 0.25)' : 'none';
     }
   </script>
 

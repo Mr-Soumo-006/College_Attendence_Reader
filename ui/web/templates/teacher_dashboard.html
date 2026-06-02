@@ -743,6 +743,9 @@
   <button class="tab-btn" data-tab="academic-ratings" onclick="switchTab('academic-ratings', this)">
     <span class="tab-icon">🧠</span> Ratings
   </button>
+  <button class="tab-btn" data-tab="monthly-matrix" onclick="switchTab('monthly-matrix', this)">
+    <span class="tab-icon">🗓️</span> Monthly Register
+  </button>
 </div>
 
 
@@ -1018,11 +1021,16 @@
               </span>
             </td>
             <td>
-              <form method="POST" action="{{ url_for('delete_student_route', student_id=s.student_id) }}" style="margin:0;" onsubmit="return confirm('Are you sure you want to delete student {{ s.name }}? This will also delete all of their attendance records!');">
-                <button type="submit" style="background: rgba(244, 63, 94, 0.15); border: 1px solid rgba(244, 63, 94, 0.3); color: #fda4af; padding: 5px 12px; border-radius: 6px; font-size: 0.72rem; font-weight: 700; cursor: pointer; transition: all 0.2s ease;" onmouseover="this.style.background='rgba(244, 63, 94, 0.3)'" onmouseout="this.style.background='rgba(244, 63, 94, 0.15)'">
-                  🗑️ Delete
+              <div style="display: flex; gap: 8px; align-items: center;">
+                <button type="button" onclick="showStudentSubjectStats('{{ s.student_id }}')" style="background: rgba(124, 58, 237, 0.15); border: 1px solid rgba(124, 58, 237, 0.3); color: #c4b5fd; padding: 5px 12px; border-radius: 6px; font-size: 0.72rem; font-weight: 700; cursor: pointer; transition: all 0.2s ease;" onmouseover="this.style.background='rgba(124, 58, 237, 0.3)'" onmouseout="this.style.background='rgba(124, 58, 237, 0.15)'">
+                  📊 Stats
                 </button>
-              </form>
+                <form method="POST" action="{{ url_for('delete_student_route', student_id=s.student_id) }}" style="margin:0;" onsubmit="return confirm('Are you sure you want to delete student {{ s.name }}? This will also delete all of their attendance records!');">
+                  <button type="submit" style="background: rgba(244, 63, 94, 0.15); border: 1px solid rgba(244, 63, 94, 0.3); color: #fda4af; padding: 5px 12px; border-radius: 6px; font-size: 0.72rem; font-weight: 700; cursor: pointer; transition: all 0.2s ease;" onmouseover="this.style.background='rgba(244, 63, 94, 0.3)'" onmouseout="this.style.background='rgba(244, 63, 94, 0.15)'">
+                    🗑️ Delete
+                  </button>
+                </form>
+              </div>
             </td>
           </tr>
           {% endfor %}
@@ -1476,6 +1484,154 @@
   </div>
 </div>
 
+<!-- ══════════════════════════════════════════════════
+     TAB 8 — MONTHLY REGISTER
+     ══════════════════════════════════════════════════ -->
+<div id="tab-monthly-matrix" class="tab-panel">
+  <div class="section-title fade-up">
+    <span class="title-icon">🗓️</span> Monthly Attendance Register
+  </div>
+  
+  <div class="table-wrap fade-up" style="margin-top: 0; padding: 1.25rem;">
+    <!-- Month and Year Controls -->
+    <div style="display: flex; gap: 1rem; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); padding: 12px 18px; border-radius: 12px;">
+      <div style="font-weight: 700; color: #fff; font-size: 0.95rem;">📅 Month Register Selector:</div>
+      <form method="GET" action="{{ url_for('teacher_dashboard') }}" style="margin: 0; display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;">
+        <input type="hidden" name="tab" value="monthly-matrix">
+        <select name="matrix_month" class="form-input" style="width: 140px; padding: 6px 12px; font-size: 0.82rem; background: rgba(0,0,0,0.25);">
+          {% for m_num in range(1, 13) %}
+            <option value="{{ m_num }}" {% if monthly_matrix.month == m_num %}selected{% endif %}>
+              {{ ['January','February','March','April','May','June','July','August','September','October','November','December'][m_num - 1] }}
+            </option>
+          {% endfor %}
+        </select>
+        <select name="matrix_year" class="form-input" style="width: 110px; padding: 6px 12px; font-size: 0.82rem; background: rgba(0,0,0,0.25);">
+          {% for y in range(2025, 2028) %}
+            <option value="{{ y }}" {% if monthly_matrix.year == y %}selected{% endif %}>{{ y }}</option>
+          {% endfor %}
+        </select>
+        <button type="submit" style="background: linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%); color: white; border: none; padding: 6px 16px; border-radius: 8px; font-size: 0.82rem; font-weight: 700; cursor: pointer; transition: all 0.2s ease;">
+          Load Register
+        </button>
+      </form>
+      <div style="margin-left: auto; font-family: 'Outfit', sans-serif; font-size: 1rem; font-weight: 700; color: #c4b5fd;">
+        Showing: {{ monthly_matrix.month_name }} {{ monthly_matrix.year }}
+      </div>
+    </div>
+
+    <!-- Monthly Grid Table -->
+    <div class="table-responsive" style="overflow-x: auto; width: 100%;">
+      {% if monthly_matrix.students|length > 0 %}
+        <table class="glass-table" style="font-size: 0.78rem; border-collapse: collapse; min-width: 1200px; width: 100%;">
+          <thead>
+            <tr style="border-bottom: 2px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.01);">
+              <th style="padding: 10px 14px; text-align: left; position: sticky; left: 0; background: #0c0b12; z-index: 2; width: 160px; font-weight: 700; color: rgba(255,255,255,0.6);">Student Name</th>
+              <th style="padding: 10px 10px; text-align: left; width: 100px; font-weight: 700; color: rgba(255,255,255,0.5);">Student ID</th>
+              {% for d in monthly_matrix.days %}
+                <th style="padding: 10px 4px; text-align: center; width: 28px; font-size: 0.7rem; font-weight: 700; color: rgba(255,255,255,0.45); border-left: 1px solid rgba(255,255,255,0.03);">{{ d }}</th>
+              {% endfor %}
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in monthly_matrix.students %}
+              <tr style="border-bottom: 1px solid rgba(255,255,255,0.03);">
+                <td style="padding: 10px 14px; position: sticky; left: 0; background: #0c0b12; z-index: 2; font-weight: 600; color: #fff; width: 160px; border-right: 1px solid rgba(255,255,255,0.05);">
+                  <div style="display: flex; align-items: center; justify-content: space-between; gap: 6px;">
+                    <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ row.name }}</span>
+                    <button type="button" onclick="showStudentSubjectStats('{{ row.student_id }}')" style="background: transparent; border: none; cursor: pointer; font-size: 0.85rem; padding: 2px; color: #a78bfa; transition: transform 0.2s ease; display: inline-flex; align-items: center; justify-content: center;" title="View Subject Stats" onmouseover="this.style.transform='scale(1.25)'" onmouseout="this.style.transform='scale(1)'">📊</button>
+                  </div>
+                </td>
+                <td style="padding: 10px 10px; font-family: monospace; color: rgba(255,255,255,0.4); width: 100px;">
+                  {{ row.student_id }}
+                </td>
+                {% for d in monthly_matrix.days %}
+                  {% set badge = row.days[d]|default('—') %}
+                  <td style="padding: 10px 4px; text-align: center; width: 28px; border-left: 1px solid rgba(255,255,255,0.03); font-weight: 700;
+                    {% if badge == 'P' %} color: #34d399; background: rgba(16, 185, 129, 0.04);
+                    {% elif badge == 'L' %} color: #fbbf24; background: rgba(245, 158, 11, 0.04);
+                    {% elif badge == 'A' %} color: #f87171; background: rgba(244, 63, 94, 0.04);
+                    {% else %} color: rgba(255,255,255,0.15);
+                    {% endif %}">
+                    {{ badge }}
+                  </td>
+                {% endfor %}
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        
+        <!-- Legend -->
+        <div style="display: flex; gap: 1.25rem; justify-content: flex-start; margin-top: 1.5rem; font-size: 0.72rem; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 1rem; color: rgba(255,255,255,0.45);">
+          <div><strong>Legend:</strong></div>
+          <div style="display: flex; align-items: center; gap: 4px;"><span style="color: #34d399; font-weight: 900;">P</span> Present / On Time</div>
+          <div style="display: flex; align-items: center; gap: 4px;"><span style="color: #fbbf24; font-weight: 900;">L</span> Late</div>
+          <div style="display: flex; align-items: center; gap: 4px;"><span style="color: #f87171; font-weight: 900;">A</span> Absent</div>
+          <div style="display: flex; align-items: center; gap: 4px;"><span style="color: rgba(255,255,255,0.25); font-weight: 900;">—</span> No Record / No Class</div>
+        </div>
+      {% else %}
+        <div style="text-align: center; color: rgba(255,255,255,0.35); font-size: 0.85rem; padding: 2rem;">
+          No students registered in the system yet.
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<!-- Glassmorphic Modal for Student Subject Attendance Details -->
+<div id="student-stats-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(12px); z-index: 9999; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.3s ease;">
+  <div class="glass-card" style="width: 90%; max-width: 750px; background: rgba(15, 12, 26, 0.85); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 24px; padding: 2rem; box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6); position: relative; transform: translateY(-30px); transition: transform 0.3s ease; box-sizing: border-box;">
+    <!-- Close Button -->
+    <button onclick="closeStudentStatsModal()" style="position: absolute; top: 1.25rem; right: 1.5rem; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 50%; color: rgba(255,255,255,0.6); width: 36px; height: 36px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; font-weight: 700; transition: all 0.2s ease;" onmouseover="this.style.background='rgba(255, 255, 255, 0.15)'; this.style.color='#fff'" onmouseout="this.style.background='rgba(255,255,255,0.05)'; this.style.color='rgba(255,255,255,0.6)'">&times;</button>
+    
+    <!-- Modal Header -->
+    <div style="margin-bottom: 1.5rem;">
+      <h2 style="font-family: 'Outfit', sans-serif; font-size: 1.6rem; font-weight: 800; color: #fff; margin-bottom: 0.25rem;" id="modal-student-name">Student Stats</h2>
+      <div style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.88rem; color: rgba(255, 255, 255, 0.5); display: flex; gap: 1rem;">
+        <span id="modal-student-id">ID: —</span>
+        <span>•</span>
+        <span id="modal-student-class">Class: —</span>
+      </div>
+    </div>
+
+    <!-- Modal Content Grid -->
+    <div id="modal-loading" style="text-align: center; padding: 3rem 0;">
+      <div style="border: 4px solid rgba(255,255,255,0.05); border-top: 4px solid #7c3aed; border-radius: 50%; width: 45px; height: 45px; margin: 0 auto 1rem; animation: spin 1s linear infinite;"></div>
+      <p style="color: rgba(255,255,255,0.4); font-size: 0.9rem;">Fetching subject breakdown...</p>
+    </div>
+
+    <div id="modal-error" style="display: none; text-align: center; padding: 2rem 0; color: #f87171;">
+      <p id="modal-error-msg">Failed to load statistics.</p>
+    </div>
+
+    <div id="modal-content" style="display: none;">
+      <div class="table-responsive" style="max-height: 400px; overflow-y: auto; border-radius: 12px;">
+        <table class="glass-table" style="font-size: 0.8rem; width: 100%;">
+          <thead>
+            <tr style="border-bottom: 2px solid rgba(255,255,255,0.08);">
+              <th style="padding: 10px; text-align: left;">Subject / Session</th>
+              <th style="padding: 10px; text-align: center;">Total Classes</th>
+              <th style="padding: 10px; text-align: center; color: #34d399;">Present</th>
+              <th style="padding: 10px; text-align: center; color: #fbbf24;">Late</th>
+              <th style="padding: 10px; text-align: center; color: #f87171;">Absent</th>
+              <th style="padding: 10px; text-align: right;">Attendance Rate</th>
+            </tr>
+          </thead>
+          <tbody id="modal-stats-table-body">
+            <!-- Dynamic Rows -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+</style>
+
 {% endblock %}
 
 
@@ -1674,12 +1830,118 @@
   }
 
   /* ═══════════════════════════════════════
+     STUDENT DETAILED SUBJECT STATS MODAL
+     ═══════════════════════════════════════ */
+  function showStudentSubjectStats(studentId) {
+    var modal = document.getElementById('student-stats-modal');
+    var modalBody = modal.querySelector('.glass-card');
+    
+    // Set display and trigger transitions
+    modal.style.display = 'flex';
+    setTimeout(function() {
+      modal.style.opacity = '1';
+      modalBody.style.transform = 'translateY(0)';
+    }, 10);
+
+    // Show loading
+    document.getElementById('modal-loading').style.display = 'block';
+    document.getElementById('modal-error').style.display = 'none';
+    document.getElementById('modal-content').style.display = 'none';
+    
+    // Reset fields
+    document.getElementById('modal-student-name').textContent = 'Loading Student...';
+    document.getElementById('modal-student-id').textContent = 'ID: ' + studentId;
+    document.getElementById('modal-student-class').textContent = 'Class: Loading...';
+
+    // Fetch stats
+    fetch('/teacher/student-stats/' + studentId)
+      .then(function(res) {
+        if (!res.ok) throw new Error('Failed to retrieve data');
+        return res.json();
+      })
+      .then(function(data) {
+        document.getElementById('modal-loading').style.display = 'none';
+        document.getElementById('modal-student-name').textContent = data.name;
+        document.getElementById('modal-student-id').textContent = 'ID: ' + data.student_id;
+        document.getElementById('modal-student-class').textContent = 'Class: ' + data.class;
+        
+        var tbody = document.getElementById('modal-stats-table-body');
+        tbody.innerHTML = '';
+        
+        if (data.subject_attendance && data.subject_attendance.length > 0) {
+          data.subject_attendance.forEach(function(s) {
+            var row = document.createElement('tr');
+            row.style.borderBottom = '1px solid rgba(255, 255, 255, 0.03)';
+            
+            // Format percentage with gradient color
+            var rateColor = '#34d399';
+            if (s.attendance_rate < 75) rateColor = '#f87171';
+            else if (s.attendance_rate < 85) rateColor = '#fbbf24';
+
+            row.innerHTML = 
+              '<td style="padding: 10px; font-weight: 600; color: #fff; text-align: left;">' + s.subject + '</td>' +
+              '<td style="padding: 10px; text-align: center;">' + s.total_classes + '</td>' +
+              '<td style="padding: 10px; text-align: center; color: #34d399; font-weight: 700;">' + s.present_count + '</td>' +
+              '<td style="padding: 10px; text-align: center; color: #fbbf24; font-weight: 700;">' + s.late_count + '</td>' +
+              '<td style="padding: 10px; text-align: center; color: #f87171; font-weight: 700;">' + s.absent_count + '</td>' +
+              '<td style="padding: 10px; text-align: right; font-weight: 700; color: ' + rateColor + ';">' + s.attendance_rate + '%</td>';
+            tbody.appendChild(row);
+          });
+          document.getElementById('modal-content').style.display = 'block';
+        } else {
+          tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 2rem; color: rgba(255,255,255,0.35);">📚 No subject-wise check-ins found yet.</td></tr>';
+          document.getElementById('modal-content').style.display = 'block';
+        }
+      })
+      .catch(function(err) {
+        document.getElementById('modal-loading').style.display = 'none';
+        var errEl = document.getElementById('modal-error');
+        errEl.style.display = 'block';
+        document.getElementById('modal-error-msg').textContent = err.message || 'An error occurred while loading data.';
+      });
+  }
+
+  function closeStudentStatsModal() {
+    var modal = document.getElementById('student-stats-modal');
+    var modalBody = modal.querySelector('.glass-card');
+    
+    modal.style.opacity = '0';
+    modalBody.style.transform = 'translateY(-30px)';
+    setTimeout(function() {
+      modal.style.display = 'none';
+    }, 300);
+  }
+
+  // Close modal when clicking outside the glass card
+  document.addEventListener('DOMContentLoaded', function() {
+    var modal = document.getElementById('student-stats-modal');
+    if (modal) {
+      modal.addEventListener('click', function(e) {
+        if (e.target === this) {
+          closeStudentStatsModal();
+        }
+      });
+    }
+  });
+
+  /* ═══════════════════════════════════════
      INIT
      ═══════════════════════════════════════ */
   document.addEventListener('DOMContentLoaded', function() {
     staggerFadeIn();
     setupYearSemesterDropdowns();
     populateDepartmentFilter();
+    
+    // Switch to active tab if provided in URL parameter
+    var urlParams = new URLSearchParams(window.location.search);
+    var activeTab = urlParams.get('tab');
+    if (activeTab) {
+      var tabBtn = document.querySelector('.tab-btn[data-tab="' + activeTab + '"]');
+      if (tabBtn) {
+        switchTab(activeTab, tabBtn);
+      }
+    }
+    
     // Animate probability bars if predictions tab is already active
     setTimeout(animateProbBars, 600);
   });

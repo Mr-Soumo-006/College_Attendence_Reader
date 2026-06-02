@@ -31,7 +31,7 @@ def get_session_record(student_id: str, session_id: int) -> dict | None:
     """Retrieve attendance record for a specific student and session."""
     with DBConnection() as (conn, cur):
         cur.execute(
-            "SELECT * FROM attendance WHERE student_id=%s AND session_id=%s",
+            "SELECT * FROM attendance WHERE student_id=%s AND session_id=%s LIMIT 1",
             (student_id, session_id),
         )
         return cur.fetchone()
@@ -40,7 +40,7 @@ def get_session_record(student_id: str, session_id: int) -> dict | None:
 def get_today_record(student_id: str) -> dict | None:
     with DBConnection() as (conn, cur):
         cur.execute(
-            "SELECT * FROM attendance WHERE student_id=%s AND date=%s",
+            "SELECT * FROM attendance WHERE student_id=%s AND date=%s LIMIT 1",
             (student_id, today_str()),
         )
         return cur.fetchone()

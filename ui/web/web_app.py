@@ -45,6 +45,7 @@ from database.models.alert import get_unread_alerts
 from database.models.attendance_session import get_active_session, create_session, end_active_session
 from database.models.student_rating import submit_rating, get_student_ratings, get_all_ratings
 from utils.exceptions import StudentNotFoundError, DatabaseError
+from analytics.monthly_matrix import get_student_subject_attendance, get_monthly_attendance_matrix
 from utils.time_utils import now, today_str, time_slot
 from utils.crypto import sign
 
@@ -197,6 +198,19 @@ def create_app():
         
         sorted_daily = sorted(daily_history.values(), key=lambda x: x["date"], reverse=True)
 
+        # Calculate subject-wise attendance
+        subject_attendance = get_student_subject_attendance(student_id)
+
+        # Calculate personal monthly calendar grid
+        from utils.time_utils import now as get_now
+        now_local = get_now()
+        monthly_grid = get_monthly_attendance_matrix(now_local.year, now_local.month)
+        student_monthly = None
+        for sm in monthly_grid["students"]:
+            if sm["student_id"] == student_id:
+                student_monthly = sm
+                break
+
         # Compute stats from all_stats if behavior_stats is empty
         if not stats:
             all_stats = compute_all_stats()
@@ -233,6 +247,12 @@ def create_app():
             trend=trend,
             ratings=ratings,
             daily_history=sorted_daily,
+            subject_attendance=subject_attendance,
+            student_monthly=student_monthly,
+            monthly_days=monthly_grid["days"],
+            month_name=monthly_grid["month_name"],
+            current_year=now_local.year,
+            current_month=now_local.month,
         )
 
     @app.route("/mark-attendance", methods=["GET"])
@@ -514,6 +534,16 @@ def create_app():
         except Exception:
             all_ratings = []
 
+        # Class-Wide Monthly Attendance Matrix
+        try:
+            from utils.time_utils import now as get_now
+            current_time = get_now()
+            matrix_year = request.args.get("matrix_year", default=current_time.year, type=int)
+            matrix_month = request.args.get("matrix_month", default=current_time.month, type=int)
+            monthly_matrix = get_monthly_attendance_matrix(matrix_year, matrix_month)
+        except Exception:
+            monthly_matrix = {"days": list(range(1, 32)), "students": [], "year": 2026, "month": 6, "month_name": "June"}
+
         return render_template(
             "teacher_dashboard.html",
             summary=summary,
@@ -527,6 +557,7 @@ def create_app():
             current_teacher_id=session.get("user_id", ""),
             active_session=active_session,
             all_ratings=all_ratings,
+            monthly_matrix=monthly_matrix,
         )
 
     @app.route("/teacher/add-student", methods=["POST"])
@@ -600,6 +631,27 @@ def create_app():
         except Exception as e:
             flash(f"Error deleting student: {e}", "error")
         return redirect(url_for("teacher_dashboard"))
+
+    @app.route("/teacher/student-stats/<student_id>", methods=["GET"])
+    @login_required("teacher")
+    def teacher_student_stats(student_id):
+        """Fetch subject-wise attendance for a single student in JSON format."""
+        try:
+            from utils.exceptions import StudentNotFoundError
+            try:
+                student = get_student(student_id)
+            except StudentNotFoundError:
+                return jsonify({"error": "Student not found"}), 404
+            
+            subject_attendance = get_student_subject_attendance(student_id)
+            return jsonify({
+                "student_id": student_id,
+                "name": student.get("name", "Unknown"),
+                "class": student.get("class", "Unknown"),
+                "subject_attendance": subject_attendance
+            })
+        except Exception as e:
+            return jsonify({"error": str(e)}), 500
 
     @app.route("/teacher/reset-device/<student_id>", methods=["POST"])
     @login_required("teacher")
