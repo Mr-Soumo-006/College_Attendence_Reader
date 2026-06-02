@@ -592,11 +592,15 @@ def create_app():
                 raise ValueError(f"Semester {semester} does not belong to Year {year} (expected Year {expected_year}).")
 
             create_student(student_id, name, department, year, semester, email, phone)
+            risk_level = request.form.get("risk_level", "LOW").strip().upper()
+            if risk_level in ("LOW", "MEDIUM", "HIGH"):
+                from database.models.student import update_risk_level
+                update_risk_level(student_id, risk_level)
             flash(f"Student '{name}' ({student_id}) added successfully!", "success")
         except Exception as e:
             flash(f"Error adding student: {e}", "error")
 
-        return redirect(url_for("teacher_dashboard"))
+        return redirect(url_for("teacher_dashboard", tab="student-registry"))
 
     @app.route("/teacher/add-teacher", methods=["POST"])
     @login_required("teacher")
@@ -637,11 +641,12 @@ def create_app():
     @login_required("teacher")
     def update_student_risk_route(student_id):
         """Manually update the risk level of a student."""
+        redirect_tab = request.form.get("redirect_tab") or request.args.get("redirect_tab") or "analytics"
         try:
             risk_level = request.form.get("risk_level")
             if not risk_level or risk_level not in ("LOW", "MEDIUM", "HIGH"):
                 flash("Invalid risk level.", "error")
-                return redirect(url_for("teacher_dashboard", tab="analytics"))
+                return redirect(url_for("teacher_dashboard", tab=redirect_tab))
             
             from database.models.student import update_risk_level
             update_risk_level(student_id, risk_level)
@@ -659,7 +664,7 @@ def create_app():
             flash(f"Risk level for student '{student_id}' has been updated to {risk_level} successfully!", "success")
         except Exception as e:
             flash(f"Error updating risk level: {e}", "error")
-        return redirect(url_for("teacher_dashboard", tab="analytics"))
+        return redirect(url_for("teacher_dashboard", tab=redirect_tab))
 
     @app.route("/teacher/student-stats/<student_id>", methods=["GET"])
     @login_required("teacher")
