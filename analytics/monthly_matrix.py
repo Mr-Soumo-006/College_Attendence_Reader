@@ -14,7 +14,7 @@ def get_student_subject_attendance(student_id: str) -> list[dict]:
         cur.execute(
             """SELECT a.status, s.session_name
                FROM attendance a
-               JOIN attendance_sessions s ON a.session_id = s.id
+               LEFT JOIN attendance_sessions s ON a.session_id = s.id
                WHERE a.student_id = %s""",
             (student_id,),
         )
@@ -73,7 +73,8 @@ def get_monthly_attendance_matrix(year: int, month: int) -> dict:
       }
     """
     # Get number of days in the month
-    num_days = calendar.monthrange(year, month)[1]
+    first_weekday, num_days = calendar.monthrange(year, month)
+    padding_days = (first_weekday + 1) % 7
     days_list = list(range(1, num_days + 1))
 
     # Retrieve all students
@@ -134,5 +135,6 @@ def get_monthly_attendance_matrix(year: int, month: int) -> dict:
         "students": sorted(student_matrix, key=lambda x: x["name"]),
         "year": year,
         "month": month,
-        "month_name": calendar.month_name[month]
+        "month_name": calendar.month_name[month],
+        "padding_days": padding_days
     }

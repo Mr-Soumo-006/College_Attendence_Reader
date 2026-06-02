@@ -920,6 +920,13 @@
               <div style="font-size: 0.72rem; font-weight: 700; color: rgba(255,255,255,0.35); text-transform: uppercase; margin-bottom: 4px;">{{ day_name }}</div>
             {% endfor %}
             
+            <!-- Weekday Start Padding -->
+            {% if monthly_padding and monthly_padding > 0 %}
+              {% for _ in range(monthly_padding) %}
+                <div style="width: 38px; height: 38px;"></div>
+              {% endfor %}
+            {% endif %}
+            
             {% for d in monthly_days %}
               {% set badge = student_monthly.days[d]|default('—') %}
               <div style="width: 38px; height: 38px; border-radius: 10px; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; font-size: 0.85rem; font-weight: 700; transition: all 0.2s ease;

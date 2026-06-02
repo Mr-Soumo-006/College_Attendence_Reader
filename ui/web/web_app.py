@@ -250,6 +250,7 @@ def create_app():
             subject_attendance=subject_attendance,
             student_monthly=student_monthly,
             monthly_days=monthly_grid["days"],
+            monthly_padding=monthly_grid["padding_days"],
             month_name=monthly_grid["month_name"],
             current_year=now_local.year,
             current_month=now_local.month,
